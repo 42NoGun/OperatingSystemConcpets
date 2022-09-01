@@ -18,6 +18,7 @@
 ```
 operating system
 time sharing(시분할)
+---
 realtime(실시간)
 
 multitasking
@@ -28,7 +29,25 @@ multiprocessor
 operating system what to do
 ```
 
+- 데비안 쉘에서 하나의 명령만 처리하는게 단일 작업?
+- 멀티 태스킹과 멀티 스레딩?
+- 윈도우는 단일 사용자를 위한 운영체제인가?
+- 사용자를 나누는 이유?
+- 가상 컴퓨터 만들어보기
+	- https://www.coursera.org/learn/build-a-computer?action=enroll
 > 새롭게 알게 된 내용
+- what is different memory management and process management?
+
+```
+Kernel take care of memory management, process management, task management and disk management. 
+	- The Process Manager manages processes in the system and is responsible for the sharing of the CPU.
+	- The Memory Manager manages memory in the system and is responsible for allocation and deallocation of memory, virtual memory management, etc	
+	- Task Management: That is, this function of operating system manages the completion of users' tasks. each task and interrupts the CPU operations to manage tasks efficiently. Task management may involve a multitasking capability. 
+
+The Memory Manager manages memory in the system and is responsible for allocation and deallocation of memory, virtual memory management, etc.
+```
+
+- how allocate memory.
 ```
 굉장히 많은 프로그램이 실행 될 때 운영체제는 공평하게 분배하는 게 아니라 일정 프로그램에 집중적으로 메모리를 할당하고, 나머지 프로그램은 swap영역에 있게 된다. 한 프로그램이 충분히 실행되고 난 후(I/O입출력 등) 할당된 자원을 다른 프로그램에 분배한다. 이떄도 대개 집중적으로 메모리를 할당해준다.
 ```
@@ -98,6 +117,7 @@ C언어 사람이 쓰기 쉽지만, 하드웨어를 다루기도 좋은 언어.
 	- 대부분 알고리즘은 OS 프로그램 자체의 내용
 	- 인간의 신체가 뇌의 통제 받듯 컴퓨터 하드웨어는 운영체제의 통제를 받으며, 그 운영체제는 사람이 프로그래밍
 	- 본인이 window xp나 linux같은 운영체제라고 생각하고 본인이 할 일이 무엇인지를 생각해보면 앞으로 배울 내용을 명확히 알 수 있다.
+
 # [2강. 운영체제 개요2]
 > Keyword
 ```
