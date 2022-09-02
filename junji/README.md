@@ -13,6 +13,67 @@
 - 입출력 시스템
 - 디스크 관리
 
+> keyword
+```
+- process
+- physical memory, virtual memory
+- 커널 주소 공간의 내용(code, data, stack)
+- kernel mode, user mode
+```
+# [7강. 프로세스 관리 1]
+### 프로그램의 실행(메모리 load)
+- 프로그램을 더블 클릭하면 메모리에 올라가 프로세스가 된다.
+- 프로그램이 실행될 때 프로그램만의 독자적인 주소 공간(address space)이 만들어지고 이것을 `virtual memory` 가상 메모리라고 한다. 당장 필요한 부분은 `physical memory`에 올라가게 되고, 그렇지 않은 부분은 `swap area`에 있다. 
+	- 나중에 메모리 관리할 때 설명이 추가로 되겠지만, virtual memory에서 `code` 영역 같은 부분은 `File System`에 실행 파일 형태로 존재하게 된다.
+- virtual memory와 physical memory사이에 `주소 변환`이 필요하다.
+- virtual memory는 <stack> <data> <code>영역이 있는데, `code`영역은 실제 `cpu에서 수행할 기계어들이 위치하는 부분`이다.
+
+### 커널 주소 공간의 내용
+1. code
+	- 커널 코드
+		- 시스템 콜, 인터럽트 처리 코드
+		- 자원 관리를 위한 코드
+		- 편리한 서비스 제공을 위한 코드
+2. data
+	- PCB PCB (모든 프로세스들을 관리하기 위한 자료구조를 가지고 있음)
+	- CPU MEM DISK (모든 하드웨어들을 관리하기 위한 자료구조를 가지고 있음)
+3. stack
+	- Process A의 커널 스택
+	- Process B의 커널 스택
+
+### 사용자 프로그램이 사용하는 함수
+- 사용자 정의 함수
+	- 자신의 프로그램에서 정의한 함수
+- 라이브러리 함수
+	- 자신의 프로그램에서 정의하지 않고 갖다 쓴 함수
+	- 자신의 프로그램의 실행 파일에 포함되어 있다.
+- 커널 함수
+	- 운영체제 프로그램의 함수
+	- 커널 함수의 호출 = 시스템 콜
+- 내 함수나 라이브러리 함수를 사용하는 것은 내 프로그램 안에서 program counter값만 바꾸어서 다른 위치에 있는 기계어를 실행하는 것이다. 단 system call은 가상 메모리 공간을 가로 질러서 영역이 완전 바뀌는 것이다. cpu제어권을 운영체제한테 넘어가게 한다.
+- CPU 옆에는 mode bit 가 붙어있다. 
+
+> 9.5(월)
+```
+- 컴퓨터 시스템 구조
+	- register에 program counter, mode bit
+- interrupt(program counter)
+	 - interrupt service routine
+	 - interrupt vector
+- system call
+- 운영체제 한테 cpu가 넘어가는 경우?
+- I/O device controller, I/O buffer
+- device driver, device controller
+- DMA
+```
+
+> 9.26(화)
+```
+- synchornous I/O
+- asynchronus I/O
+- 저장장치 계층 구조(캐싱)
+```
+
 # [6강. 컴퓨터 시스템 구조] 
 - 인터럽트가 들어오면 프로그램 카운터는 운영체제를 가리킨다. register에 program counter가 있는데 이는 다음 기계어를 실행할 위치를 가리키고. 운영체제 코드가 실행될 때 mode bit0. mode bit1(제한된 기계어만 실행)
 
@@ -57,6 +118,36 @@
 	- 인터럽트 벡터 : 해당 인터럽트의 처리 루틴 주소를 가지고 있음 (인터럽트 종류별로 실행해야 할 코드의 위치를 담고 있음, 주소에 대한 포인터), 타이머가 실행했을 때 그리고 디스크 컨트롤러가 발생시켰을 때 ...
 	- 인터럽트 처리 루틴(interrupt service routine, 인터럽트 핸들러)
 		- 해당 인터럽트를 처리하는 커널 함수
+	
+### synchronous I/O, asynchronous I/O
+### 동기식 입출력과 비동기식 입출력
+- 동기식 입출력(synchronous I/O)
+	- I/O 요청 후 입출력 작업이 완료된 후에야 제어가 사용자 프로그램에 넘어감.
+	- 구현방법 1
+		- I/O가 끝날 때까지 CPU 낭비시킴
+		- 매시점 하나의 I/O만 일어날 수 있음
+	- 구현방법 2
+		- I/O가 완료될 때까지 해당 프로그램에서 CPU 빼았음
+		- I/O처리를 기다리는 중 그 프로그램을 줄 세움
+		- 다른 프로그램에게 CPU를 줌
+- 비동기식 입출력(asynchronous I/O)
+	- I/O가 시작된 후 입출력 작업이 끝나기를 기다리지 않고 제어가 사용자 프로그램에 즉시 넘어감.
+- 두 경우 모두 I/O 완료는 인터럽트로 알려줌 
+
+- CPU가 I/O요청을 한다?
+
+### DMA(Direct Memory Access)
+- 빠른 입출력 장치를 메모리에 가까운 속도로 처리하기 위해 사용
+- CPU의 중재 없이 device controller가 device의 buffer storage의 내용을 메모리 block단위로 직접 전송
+- 바이트 단위가 아니라 block 단위로 인터럽트를 발생시킴.
+
+### 서로 다른 입출력 기계어
+- I/O를 수행하는 special instruction에 의해 (메모리 접근하는 기계어 따로 있고, I/O 수하는 기계어 따로 있고)
+- Memory mapped I/O에 의해 (메모리 접근 하는 기계어로 I/O까지 하는 것이다. 메모리 주소가 I/O장치까지 연장해서 매겨짐)
+
+### 저장장치 계층 구조
+- 캐싱: 재사용성
+ 
 # [5강. 컴퓨터 시스템 구조] -> 그림 그리며 설명할 수 있어야 한다.
 - CPU, Memory, I/O device.
 - 프로그램을 실행시키면 프로그램이 메모리에 올라가서 프로세스
@@ -76,11 +167,6 @@
 	- CPU를 특정 프로그램이 독점하는 것으로부터 보호
 - 타이머는 time sharing 구현을 위해 널리 이용됨.
 - 타이머는 현재 시간을 계산하기 위해서도 사용.
-
-
-
-
-
 
 
 - 입출력 장치들이 interrupt line 에 
