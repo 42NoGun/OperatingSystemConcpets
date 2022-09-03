@@ -13,6 +13,268 @@
 - 입출력 시스템
 - 디스크 관리
 
+> keyword
+```
+- process
+- physical memory, virtual memory
+- 커널 주소 공간의 내용(code, data, stack)
+- kernel mode, user mode
+```
+# [7강. 프로세스 관리 1]
+### 프로그램의 실행(메모리 load)
+- 프로그램을 더블 클릭하면 메모리에 올라가 프로세스가 된다.
+- 프로그램이 실행될 때 프로그램만의 독자적인 주소 공간(address space)이 만들어지고 이것을 `virtual memory` 가상 메모리라고 한다. 당장 필요한 부분은 `physical memory`에 올라가게 되고, 그렇지 않은 부분은 `swap area`에 있다. 
+	- 나중에 메모리 관리할 때 설명이 추가로 되겠지만, virtual memory에서 `code` 영역 같은 부분은 `File System`에 실행 파일 형태로 존재하게 된다.
+- virtual memory와 physical memory사이에 `주소 변환`이 필요하다.
+- virtual memory는 <stack> <data> <code>영역이 있는데, `code`영역은 실제 `cpu에서 수행할 기계어들이 위치하는 부분`이다.
+
+### 커널 주소 공간의 내용
+1. code
+	- 커널 코드
+		- 시스템 콜, 인터럽트 처리 코드
+		- 자원 관리를 위한 코드
+		- 편리한 서비스 제공을 위한 코드
+2. data
+	- PCB PCB (모든 프로세스들을 관리하기 위한 자료구조를 가지고 있음)
+	- CPU MEM DISK (모든 하드웨어들을 관리하기 위한 자료구조를 가지고 있음)
+3. stack
+	- Process A의 커널 스택
+	- Process B의 커널 스택
+
+### 사용자 프로그램이 사용하는 함수
+- 사용자 정의 함수
+	- 자신의 프로그램에서 정의한 함수
+- 라이브러리 함수
+	- 자신의 프로그램에서 정의하지 않고 갖다 쓴 함수
+	- 자신의 프로그램의 실행 파일에 포함되어 있다.
+- 커널 함수
+	- 운영체제 프로그램의 함수
+	- 커널 함수의 호출 = 시스템 콜
+- 내 함수나 라이브러리 함수를 사용하는 것은 내 프로그램 안에서 program counter값만 바꾸어서 다른 위치에 있는 기계어를 실행하는 것이다. 단 system call은 가상 메모리 공간을 가로 질러서 영역이 완전 바뀌는 것이다. cpu제어권을 운영체제한테 넘어가게 한다.
+- CPU 옆에는 mode bit 가 붙어있다. 
+
+> 9.5(월)
+```
+- 컴퓨터 시스템 구조
+	- register에 program counter, mode bit
+- interrupt(program counter)
+	 - interrupt service routine
+	 - interrupt vector
+- system call
+- 운영체제 한테 cpu가 넘어가는 경우?
+- I/O device controller, I/O buffer
+- device driver, device controller
+- DMA
+```
+
+> 9.26(화)
+```
+- synchornous I/O
+- asynchronus I/O
+- 저장장치 계층 구조(캐싱)
+```
+
+# [6강. 컴퓨터 시스템 구조] 
+- 인터럽트가 들어오면 프로그램 카운터는 운영체제를 가리킨다. register에 program counter가 있는데 이는 다음 기계어를 실행할 위치를 가리키고. 운영체제 코드가 실행될 때 mode bit0. mode bit1(제한된 기계어만 실행)
+
+운영체제한테 cpu가 넘어가는 경우는 어떤 경우가 있나요?
+-> interrupt가 있을 경우에 넘어가고, timer에 의해서 넘어감. 해당 프로세스의 실행이 완료되었을 떄?
+1. 하드웨어 장치들이 인터럽트를 걸었을 경우
+2. 프로그램 소프트웨어가 직접 IRQ(Interrupt Request line)을 설정해서 운영체제한테 CPU가 넘어가는. (ex) system call) - 본연의 interrupt의미와 다르다. trap
+3. exception (0으로 나누려고 했던, 본인에게 권한없는 기계어 명령을 실행하려고 할 떄)
+-> 사용자 프로그램이 CPU를 가지고 있다가 스스로 내어 놓던지, 빼앗기던지 CPU가 다른 프로그램, 또는 운영체제에게 넘어가는 경우는?
+1. 나는 계속 쓰고 싶은데, timer interrupt에 의해 뺏김
+2. 더이상 cpu를 쓸 의지가 없는 경우(오래 걸리는 I/O작업을 만난 경우)
+
+### Device Controller 
+#### I/O device controller
+- CPU가 컨트롤러에게 하는 기계어가 있다. 모든 I/O장치를 접근하는 = CPU가 I/O를 해달라고 부탁하는 그런 기계어들은 특권 명령으로 묶여있다. 사용자 프로그램이 직접 그 기계어를 실행할 수가 없다. 그게 바로 System call이다. 사용자 프로그램이 뭔가를 하고 싶은데 특권 명령을 하는 기계어다.
+- CPU가 어떤 파일을 읽어달라고 하면, disk controller는 헤드를 옮겨서 자기 버퍼에 들여쓰는 작업을 한다. (대단히 오래 걸림).  그 동안 다른 프로그램에 CPU 를 넘김. 다 읽으면 cpu에게 interrupt를 건다. cpu제어권이 운영체제.
+읽어온 파일을 메모리 위치에 카피. cpu를 얻으면 본인의 기계어 실행 가능.
+
+- I/O device controller
+	- 해당 I/O 장치유형을 관리하는 일종의 작은 CPU
+	- 제어 정보를 위해 control register, status register를 가짐
+	- local buffer를 가짐(일종의 data register)
+- I/O는 실제 device와 local buffer 사이에서 일어남.
+- Device controller는 I/O가 끝났을 경우 interrupt로 CPU에 그 사실을 알림.
+- device driver(장치구동기)
+	- OS코드 중 각 장치별 처리 루틴 ->software
+- device controller(장치제어기)
+	- 각 장치를 통제한느 일종의 작은 cpu ->hardware
+#### 시스템 콜
+- 사용자 프로그램이 운영체제의 서비스를 받기 위해 커널 함수를 호출하는 것을 말한다. 
+- 프로세스가 직접 programcounter를 넘길 수 없기에, 자신의 기계어를 통해 인터럽트 라인을 셋팅한다. 
+  
+#### 인터럽트(interrupt)
+- 인터럽트를 당한 시점의 레지스터와 program counter를 save한 후 CPU의 제어를 인터럽트 처리 루틴에 넘긴다.
+- interrupt(넓은 의미)
+	- interrupt(하드웨어 인터럽트): 하드웨어가 발생시킨 인터럽트)
+	- Trap(소프트웨어 인터럽트)
+		- Exception : 프로그램 오류
+		- System call : 프로그램이 커널함수 호출
+
+- 인터럽트 관련 용어
+	- 인터럽트 벡터 : 해당 인터럽트의 처리 루틴 주소를 가지고 있음 (인터럽트 종류별로 실행해야 할 코드의 위치를 담고 있음, 주소에 대한 포인터), 타이머가 실행했을 때 그리고 디스크 컨트롤러가 발생시켰을 때 ...
+	- 인터럽트 처리 루틴(interrupt service routine, 인터럽트 핸들러)
+		- 해당 인터럽트를 처리하는 커널 함수
+	
+### synchronous I/O, asynchronous I/O
+### 동기식 입출력과 비동기식 입출력
+- 동기식 입출력(synchronous I/O)
+	- I/O 요청 후 입출력 작업이 완료된 후에야 제어가 사용자 프로그램에 넘어감.
+	- 구현방법 1
+		- I/O가 끝날 때까지 CPU 낭비시킴
+		- 매시점 하나의 I/O만 일어날 수 있음
+	- 구현방법 2
+		- I/O가 완료될 때까지 해당 프로그램에서 CPU 빼았음
+		- I/O처리를 기다리는 중 그 프로그램을 줄 세움
+		- 다른 프로그램에게 CPU를 줌
+- 비동기식 입출력(asynchronous I/O)
+	- I/O가 시작된 후 입출력 작업이 끝나기를 기다리지 않고 제어가 사용자 프로그램에 즉시 넘어감.
+- 두 경우 모두 I/O 완료는 인터럽트로 알려줌 
+
+- CPU가 I/O요청을 한다?
+
+### DMA(Direct Memory Access)
+- 빠른 입출력 장치를 메모리에 가까운 속도로 처리하기 위해 사용
+- CPU의 중재 없이 device controller가 device의 buffer storage의 내용을 메모리 block단위로 직접 전송
+- 바이트 단위가 아니라 block 단위로 인터럽트를 발생시킴.
+
+### 서로 다른 입출력 기계어
+- I/O를 수행하는 special instruction에 의해 (메모리 접근하는 기계어 따로 있고, I/O 수하는 기계어 따로 있고)
+- Memory mapped I/O에 의해 (메모리 접근 하는 기계어로 I/O까지 하는 것이다. 메모리 주소가 I/O장치까지 연장해서 매겨짐)
+
+### 저장장치 계층 구조
+- 캐싱: 재사용성
+ 
+# [5강. 컴퓨터 시스템 구조] -> 그림 그리며 설명할 수 있어야 한다.
+- CPU, Memory, I/O device.
+- 프로그램을 실행시키면 프로그램이 메모리에 올라가서 프로세스
+- 디스크를 관리하는 작은 cpu는 디스크 컨트롤러 ... (기계어를 연산하는 기능), CPU는 작업공간(메모리)이 필요하다. 컨트롤러 같은 작은 cpu도 작업하는 공간이 필요한데 이를 로컬 버퍼라고 한다.
+- CPU가 사용자에게 넘어가면, 그걸 제어할 방법은 없다. CPU에서 기계어를 실행할 떄 사용자가 실행하는 건지, 운영체제가 실행하는 건지 `mode bit`를 가지고 있다. (usermode, kernel mode), 위험한 명령을 '특권명령'이라고도 함.
+- mode bit : 사용자 프로그램의 잘못된 수행으로 다른 프로그램 및 운영체제에 피해가 가지 않도록 하기 위한 보호 장치 필요.
+- interrupt나 Exception발생 시 하드웨어가 mode bit를 0으로 바꿈.
+- 사용자 프로그램에게 CPU를 넘기기 전 mode bit를 1으로 셋팅
+- 컴퓨터는 메모리에서 기계어를 읽어와 하나씩 실행한 다음에 다음 기계어를 실행하기에 앞서 interrupt에 signal이 들어온 게 있는지 확인한다.
+- CPU가 작업을 하다 Disk를 읽어와야 한다면, 본인이 직접 읽지 않고 Disk Controller한테 어떤 파일좀 읽어줘 하고 부탁을 하면, 컨트롤러는 일을 한다. CPU는 다른 프로그램에게 넘어가게 되고, 디스크 컨트롤러가 일을 다 했으면 CPU한테 알려주는 데, 이를 인터럽트. CPU는 그다음 기계어를 실행 하기에 앞서 인터럽트 들어온 걸 확인. 인터럽트가 들어왔으면 CPU는 자동적으로 운영체제한테 넘어감. 그 인터럽트에 대응하는 일을 한다.
+- registers에는 program counter라는 레지스터가 있다. program counter 레지스터는 메모리의 주소를 가지고 있다. 다음번에 실행할 기계어의 메모리를 가지고 있음. 
+- 프로그램한테서 CPU를 뺏어오는 건 운영체제 혼자서 할 수가 없다. CPU의 독점을 막기 위해서는 부가적인 하드웨어를 두고 있다. 이를 timer라고 함. timer는 일정 시간 간격으로 인터럽트를 발생 시킴. 운영 체제가 사용자 A프로그램에 CPU를 넘길 때 먼저 timer 시간을 설정함.
+- 타이머
+	- 정해진 시간이 흐른 뒤 운영체제에게 제어권이 넘어가도록 인터럽트를 발생시킴.
+	- 타이머는 매 클럭 틱 때마다 1씩 감소
+	- 타이머 값이 0이 되면 인터럽트 발생
+	- CPU를 특정 프로그램이 독점하는 것으로부터 보호
+- 타이머는 time sharing 구현을 위해 널리 이용됨.
+- 타이머는 현재 시간을 계산하기 위해서도 사용.
+
+
+- 입출력 장치들이 interrupt line 에 
+# [3 ~ 4강. 컴퓨터 시스템 구조1 2]
+> keyword
+```
+operating system
+time sharing(시분할)
+---
+realtime(실시간)
+
+multitasking
+multiprogramming
+multiprocess 
+multiprocessor
+
+operating system what to do
+```
+
+- 데비안 쉘에서 하나의 명령만 처리하는게 단일 작업?
+- 멀티 태스킹과 멀티 스레딩?
+- 윈도우는 단일 사용자를 위한 운영체제인가?
+- 사용자를 나누는 이유?
+- 가상 컴퓨터 만들어보기
+	- https://www.coursera.org/learn/build-a-computer?action=enroll
+> 새롭게 알게 된 내용
+- what is different memory management and process management?
+
+```
+Kernel take care of memory management, process management, task management and disk management. 
+	- The Process Manager manages processes in the system and is responsible for the sharing of the CPU.
+	- The Memory Manager manages memory in the system and is responsible for allocation and deallocation of memory, virtual memory management, etc	
+	- Task Management: That is, this function of operating system manages the completion of users' tasks. each task and interrupts the CPU operations to manage tasks efficiently. Task management may involve a multitasking capability. 
+
+The Memory Manager manages memory in the system and is responsible for allocation and deallocation of memory, virtual memory management, etc.
+```
+
+- how allocate memory.
+```
+굉장히 많은 프로그램이 실행 될 때 운영체제는 공평하게 분배하는 게 아니라 일정 프로그램에 집중적으로 메모리를 할당하고, 나머지 프로그램은 swap영역에 있게 된다. 한 프로그램이 충분히 실행되고 난 후(I/O입출력 등) 할당된 자원을 다른 프로그램에 분배한다. 이떄도 대개 집중적으로 메모리를 할당해준다.
+```
+- 좁은 의미의 운영체제는 커널(운영체제의 가장 핵심적인 부분, 메모리에 항상 상주하는 부분)
+- 넓은 의미의 운영체제는 커널 뿐 아니라 각종 주변 시스템 유틸리티 포함하는 개념
+- 컴퓨터 시스템의 `자원(resource)을 효율적으로 관리` --> 소프트웨어 자원도 포함된다.
+- 컴퓨터의 두뇌는 운영체제가 아닐까? CPU는 단순히 연산이 빠르다. 기억을 하려면 memory가 필요하다. 판단능력은 없기 때문이다.
+- 운영체제는 관리하는 역할이기에 판단을 하기에 두뇌역할을 한다. (통치자역할) 
+- 누구한테 메모리를, 누구한테 cpu를 얼마나 줄까, 효율적, 공평하게. 
+- 메모리 관리 ( 한정된 메모리 공간에 여러 프로그램이 동시에 올라감. 프로그램마다 메모리를 조금씩 나누어져야 한다) 
+	- 무조건 공평하게 배분하면 어느 하나가 발전하지 못한다. (사회 지원제도와 비슷하다) 메모리도 이처럼 동작함. 
+	- 메모리 관리. 굉장히 큰 많은 프로그램이 실행될 때 메모리 공간을 공평하게 n분의 1로 나누어 쓰는 게 아니라 특정 프로그램은 (swap)부분으로 쫓아내고, 특정 프로그램만 메모리를 많이 주는 경우가 있다. 많이 쓰고 있는 프로그램은 충분히 썼기에 I/O를 하러 떠난다. 그러면 그 친구의 메모리를 뺏어 다른 프로그램에 집중투자함. (몰아주는 게 훨씬 더 효율적)
+- 운영 체제의 분류
+	1. 동시 작업이 가능한지
+		- multi tasking이 가능하다(동시에 2개이상 작업 처리)
+	2. 사용자의 수
+		- 단일, 다중(좀 더 복잡한 문제, ex - 보안 문제)
+	3. 처리방식
+		- 일괄처리(batch processing)
+			- 작업 요청의 일정량 모아서 한꺼번에 처리
+			- 작업이 완전 종료될 떄까지 기다려야함.
+			- ex)punch card 처리 시스템
+		- 시분할(time sharing)
+			- 여러 작업을 수행할 때 컴퓨터 처리 능력을 일정한 시간단위로 분할하여 사용.
+			- 일괄 처리 시스템에 비해 짧은 응답 시간을 가짐
+			- interactive한 방식
+		- 실시간(realtime OS)
+			- 정해진 시간 안에 어떠한 일이 반드시 종료됨이 보장되어야 하는 실시간 시스템을 위한 OS
+			- ex) 원자로/ 공장 제어, 미사일 제어, 반도체 장비, 로보트 제어
+		- 실시간 시스템의 개념 확장
+			- Hard realtime system(경성 실시간 시스템)
+			- soft realtime system(연성 실시간 시스템)
+- Multitasking (컴퓨터 안에 프로그램을 동시에 여러개 돌리는 거)
+- Multiprogramming (메모리 측면 강조, 메모리에 여러 프로그램을 동시에 돌리는거)
+- time sharing (시간을 쪼개서 쓴다, CPU강조)
+- Multiprocess 
+  - 다들 똑같은 얘기다. 
+- Multiprocessor : 하나의 컴퓨터에 CPU가 여러개 붙어 있음.
+
+### UNIX
+- C
+- 높은 이식성
+- 최소한 커널 구조
+- 복잡한 시스템에 맞게 확장 용이
+- 오픈 소스
+```c
+원래는 하드웨어를 제어하고 싶으면 어셈블리어를 사용해야 했다. 효율적인 언어지만 사람이 이해하기는 어렵고, 아예 C언어를 만듬.
+
+C언어 사람이 쓰기 쉽지만, 하드웨어를 다루기도 좋은 언어.
+```
+
+### MS_DOS (Disk operating system)
+- 개인적 컴퓨터를 위한 컴퓨터. 단일 사용자 운영체제. 메모리 관리 능력 한계(주 기억장치 640kb)
+
+### 운영체제의 구조
+- CPU 스케쥴링
+- 메모리 관리
+- 발열 관리
+- 입출력 관리(각기 다른 입출력장치와 컴퓨터간에 어떻게 정보를 주고 받게 하지?)
+- 프로세스 관리
+	- 프로세스의 생성과 삭제
+	- 자원 할당 및 반환
+	- 프로세스간 협력
+- 그 외 (보호시스템, 네트워킹, 명령어해석기)
+
+- 이 수업을 OS사용자 관점이 아니라 OS 개발자 관점에서 수강해야 한다.
+	- 대부분 알고리즘은 OS 프로그램 자체의 내용
+	- 인간의 신체가 뇌의 통제 받듯 컴퓨터 하드웨어는 운영체제의 통제를 받으며, 그 운영체제는 사람이 프로그래밍
+	- 본인이 window xp나 linux같은 운영체제라고 생각하고 본인이 할 일이 무엇인지를 생각해보면 앞으로 배울 내용을 명확히 알 수 있다.
+
 # [2강. 운영체제 개요2]
 > Keyword
 ```
@@ -123,6 +385,14 @@ Disk Scheduling
 
 ### 운영체제의 종류 
 #### 오픈소스 개발자들은 어떻게 먹고 사는가?
+```c
+소프트웨어 상품의 특이한 성질.
+만드는데 인건비가 드나, 추가적으로 파는 비용은 거의 없다.
+독점체제가 가능한 시장.
+사실 공개소프트웨어 개발자는 2등이었던 것.
+소프트웨어 교육시장, 컨설팅, 명예, 버그를 잡으며 더 탄탄한 프로그램.
+지금은 소프트웨어의 특수성이 오히려 강력한 무기가 되는.
+```
 
 # [1강. 운영체제 개요]
 
@@ -150,7 +420,7 @@ CPU
 - 컴퓨터 시스템을 편리하게 사용할 수 있는 환경을 제공
 	- 운영체제는 동시 사용자/프로그램들이 각각 독자적 컴퓨터에서 수행되는 것 같은 환상(illusion)을 제공
 	- 하드웨어를 직접 다루는 복잡한 부분을 운영체제가 대행
-- 컴퓨터 시스템의 `자원(resource)을 효율적으로 관리`
+- 컴퓨터 시스템의 `자원(resource)을 효율적으로 관리` --> 소프트웨어 자원도 포함된다.
 	- `CPU, 메모리, I/O 장치` 등의 효율적 관리
 		- 주어진 자원으로 최대한의 성능을 내도록 -> `효율성`
 		- 특정 사용자/프로그램의 지나친 불이익이 발생하지 않도록 -> `형평성`
