@@ -14,6 +14,98 @@
 - 디스크 관리
 
 > keyword
+```c
+프로세스
+프로세스의 상태(running ready blocked)
+PCB
+Context Switch
+```
+# [8강. 프로세스 관리 2]
+### 프로세스의 개념
+- Process is `a program in execution`.
+- 프로세스의 문맥(context)
+	- cpu 수행 상태를 나타내는 하드웨어 문맥
+		- program Counter
+		- 각종 register
+	- 프로세스의 주소 공간
+		- code, data, stack
+	- 프로세스 관련 커널 자료 구조
+		- PCB(Process control block)
+		- Kernel stack
+ 
+### 프로세스의 상태
+- 프로세스는 상태(state)가 변경되며 수행된다.
+	- Running
+		- CPU를 잡고 instruction을 수행중인 상태
+	- Ready
+		- CPU를 기다리는 상태(메모리 등 다른 조건을 모두 만족하고)
+	- Blocked(wait, sleep)
+		- CPU를 주어도 당장 instruction을 수행할 수 없는 상태
+		- process 자신이 요청한 event(ex: I/O)가 즉시 만족되지 않아 이를 기다리는 상태
+		- ex) 하드디스크에서 파일을 읽어와야 하는 경우
+	- New: 프로세스가 생성중인 상태
+	- Terminated: 수행이 끝난 상
+```
+여러 큐를 둬서 프로세스 상태가 어떻고 하는 걸 
+운영체제가 Data영역에 있는 PCB를 통해서 관리한다. 
+// 프로세스 마다 PCB를 두고 있다.
+
+온전하게 프로세스가 되면 ready상태(cpu만 있으면 당장 실행)
+cpu에게 당장 필요한 부분은 메모리에. ready상태는 프로세스가 메모리에 존재
+
+CPU를 계속 쓰고 싶은데 못 쓰는 경우
+1. timer interrupt
+2. CPU기계어 실행, 오래걸리는 작업(I/O or event wall) -> blocked status
+3. 본인의 일을 다해서 종료
+```
+
+### PCB (Process Control Block)
+- 운영체제가 각 프로세스를 관리하기 위해 프로세스당 유지하는 정보
+- 다음의 구성 요소를 가진다(구조체)
+	- 1. OS가 관리상 사용하는 정보
+		- Process state, Process ID
+		- scheduling information, priority
+	- 2. CPU 수행 관련 하드웨어 값
+		- Program counter, registers
+	- 3. 메모리 관련
+		- Code, data, stack의 위치정보
+	- 4. 파일 관련
+		- Open file descriptors
+
+- PCB는 어디에 있는 걸까? 운영체제(커널)가 가지고 있는 data영역에 각 프로세스별 정보가 있다.
+- 왜 PCB에 program counter라던지 registers를 들고 다닐까?
+	- 매번 CPU를 뺏길 때는 이 프로세스가 어디까지 수행되었는지 알아야 하기 때문이다.
+
+### 문맥 교환(context switch)
+- CPU를 한 프로세스에서 다른 프로세스로 넘겨주는 과정
+- CPU가 다른 프로세스에게 넘어갈 때 운영체제는 다음을 수행
+	- CPU를 내어주는 프로세스의 상태를 그 프로세스의 PCB에 저장
+	- CPU를 새롭게 얻는 프로세스의 상태를 PCB에서 읽어옴.
+- 기존 프로세스 cache memory를 싹다 비워야하는 비용이 되게 크다고 하더라(flush)
+```
+CPU가 하나의 프로세스에서 다른 프로세스로 넘어가는 과정을 의미.
+문맥교환과 문맥교환 아닌게 있다.
+- system call이나 interrupt 발생시 반드시 context switch가 일어나는 건 아니다.
+	- program A cpu, interrupt or system call -> Kernel mode. 
+	  (즉 사용자 CPU에서 운영체제 커널로 CPU가 넘어간 것을 문맥교환이라고 하진 않는다 A->Kernel->A) 지극히 일부만 save.
+	- A, interrupt(다른 프로그램) -> 커널이 키보드 입력 처리 ->
+		(이 과정도 CPU를 빼앗긴게 아니다.)
+
+Context switch
+1. timer
+2. I/O 
+```
+
+### 프로세스를 스케쥴링하기 위한 큐
+- job queue
+	- 현재 시스템 내에 있는 모든 프로세스의 집합
+- Ready queue
+	- 현재 메모리 내에 있으면서 CPU를 잡아서 실행되기를 기다리는 프로세스의 집합
+- Device queue
+	- I/O device의 처리를 기다리는 프로세스의 집합
+- 프로세스들은 각 큐들을 오가며 수행된다.
+### 
+> keyword
 ```
 - process
 - physical memory, virtual memory
