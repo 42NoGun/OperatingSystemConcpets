@@ -13,6 +13,62 @@
 - 입출력 시스템
 - 디스크 관리
 
+# [10강. 프로세스 관리 4]
+- 프로세스의 상태도(사진)
+- swap in, out
+	- swap out : 메모리에서 통째로 쫓겨남
+	- swap in : 다시 메모리로 들어옴
+- process1이 system call을 호출하고, CPU가 운영체제한테 넘어갔을 때 A를 무슨 상태라고 부르는가? -> A가 여전히 일을 하고 있다고 봄이 타당
+- process1이 interrupt가 걸려도, a는 여전히 실행되고 있다(running).(간주한다), process2가 I/O 처리를 끝내고 들어왔지만, b가 running했다는 표현을 쓰지 않고 직전에 들어온 프로세스가 커널모드에서 동작한다. (로 간주)
+- DISK I/O => Hardware 인터럽트기도 하고 software인터럽트도 하다. I/O가 시작될 때는 System call을 해서 요청. (software interrupt), I/O가 끝났을 떈 Disk controller가 I/O에게 끝났다고 알리기에 (hardware interrupt).
+ 
+### Thread 17:38~
+- A `thread`(or `lightweight` process) is a basic util of CPU utilization
+- Thread의 구성
+	- program counter
+	- register set
+	- stack space
+- Thread가 동료 Thread와 공유하는 부분(=task)
+	- code section
+	- data section
+	- OS resources
+- 전통적인 개념의 heavyweight process는 하나의 thread를 가지고 있는 task로 볼 수 있다.
+ 
+# [9강. 프로세스 관리 3]
+### 스케쥴러(scheduler)
+- 1. Long-term scheduler(장기 스케쥴러 or job scheduler) //메모리를 주는 문제
+	- 시작 프로세스 중 어떤 것들을 ready queue로 보낼지 결정
+	- 프로세스에 memory(및 각종 자원)을 주는 문제
+	- degree of Multiprogramming을 제어
+	- times sharing system에는 보통 장기 스케쥴러가 없음(무조건 ready)
+- 2. Short-term scheduler(단기 스케쥴러 or CPU scheduler)
+	- 어떤 프로세스를 다음번에 running시킬 지 결정
+	- 프로세스에 CPU를 주는 문제
+	- 충분히 빨라야 함(millisecond 단위)
+- 3. Medium-term scheduler(중기 스케쥴러 or Swapper) // time sharing시스템에서 장기 스케쥴러가 없기 때문에 중기 스케쥴러가 있다. 메모리 경합문제
+	- 여유 공간 마련을 위해 프로세스 통째로 메모리에서 디스크로 쫓아냄
+	- 프로세스에게서 memory를 뺏는 문제
+	- degree of Multiprogramming을 제어
+cf.
+	메모리에 올라가있는 프로그램의 수 : degree of multiprogramming
+	
+### 프로세스의 상태(process state)
+- Running, Ready, Blocked(wait, sleep)
+- Suspended(stopped) // 중기 스케쥴러에 의한 상태, 이외에도 여러 원인 
+	- 외부적인 이유로 프로세스의 수행이 정지된 상태
+	- 프로세스는 통째로 디스크에 swap out된다.
+	- 사용자가 프로그램을 일시정지 시킨 경우(break key)
+		- 시스템이 여러 이유로 프로세스를 잠시 중단 시킴
+		- 메모리에 너무 많은 프로세스가 올라와 있을 때
+cf. 
+	- Blocked: 자신이 요청한 event가 만족되면 Ready
+	- Suspended: 외부에서 resume해 주어야 Active
+// 실행이라는 것이 CPU사용하는 것만이 아니다. I/O를 기다리는 프로세스도 살아 있는 거임. Suspended는 아예 정지된 상태임.
+> 2022.09.05(월)
+```
+- device controller에 펌웨어 -> 키보드 마우스에도 다 펌웨어가 있다.
+```
+
 > keyword
 ```c
 프로세스
