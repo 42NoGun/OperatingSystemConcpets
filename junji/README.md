@@ -13,6 +13,73 @@
 - 입출력 시스템
 - 디스크 관리
 
+> keyword
+```
+프로세스 생성
+fork
+exec
+```
+# [11강. 프로세스 관리 5]
+
+### 프로세스 생성(Process Creation)
+- 부모 프로세스가 자식 프로세스 생성(system call)
+- 프로세스의 트리(계층구조)형성
+- 프로세스는 자원을 필요로 함
+	- 운영체제로부터 받음
+	- 부모와 공유
+- 자원을 공유
+	- 부모와 자식이 모든 자원을 공유하는 모델
+	- 일부를 공유하는 모델
+	- 전혀 공유하지 않는 모델
+- 수행(Execution)
+	- 부모와 자식은 공존하며 수행되는 모델
+	- 자식이 종료(terminate)될 떄까지 부모가 기다리는(wait)모델 
+
+### fork() 시스템 콜
+- 주소 공간(Adress space) // code data stack
+	- 자식은 부모의 공간을 복사함(binary and OS data)
+	- 자식은 그 공간에 새로운 프로그램을 올림
+- 유닉스
+	- fork() 시스템 콜이 새로운 프로세스를 생성
+		- 부모를 그대로 복사(OS data except PID + binary)
+		- 주소 공간 할당
+	- fork 다음에 이어지는 exec () 시스템 콜을 통해 새로운 프로그램을 메모리에 올림
+```c
+pid = fork();
+if (pid > 0) // parent
+else // child
+```
+
+### 프로세스 종료(Process Termination)
+- 프로세스가 마지막 명령을 수행한 후 운영체제에게 이를 알려줌(exit)
+	- 자식이 부모에게 output data를 보냄(via wait)
+	- 프로세스의 각종 자원들이 운영체제에게 반납됨
+- 부모 프로세스가 자식의 수행을 종료시킴(abort)
+	-  자식이 할당 자원의 한계치를 넘어섬
+	- 자식에게 할당된 태스크가 더 이상 필요하지 않음
+	- 부모가 종료(exit)하는 경우
+		- 운영체제는 부모 프로세스가 종료하는 경우 자식이 더 이상 수행되도록 두지 않는다.
+		- 단계적인 종료.
+> keyword
+
+### exec()시스템 콜
+```c
+int main(void)
+{
+	printf("hello\n");
+	execlp("/bin/date", "/bin/date", (char *)0); // 3번쨰 아규먼트는 전달할 거. //hello가 아니라 date를 출력하는 ...
+	printf("haha\n"); // 덮어 씌워졌기 때문에 실행되지 않는다.k
+}
+```
+프로세스의 상태(ready, running, blocked(wait, sleep))
+인터럽트 
+swap in, out
+Thread
+	- 구성
+	- 공유하는 부분
+장점
+```
+
 # [10강. 프로세스 관리 4]
 - 프로세스의 상태도(사진)
 - swap in, out
@@ -22,7 +89,7 @@
 - process1이 interrupt가 걸려도, a는 여전히 실행되고 있다(running).(간주한다), process2가 I/O 처리를 끝내고 들어왔지만, b가 running했다는 표현을 쓰지 않고 직전에 들어온 프로세스가 커널모드에서 동작한다. (로 간주)
 - DISK I/O => Hardware 인터럽트기도 하고 software인터럽트도 하다. I/O가 시작될 때는 System call을 해서 요청. (software interrupt), I/O가 끝났을 떈 Disk controller가 I/O에게 끝났다고 알리기에 (hardware interrupt).
  
-### Thread 17:38~
+### Thread 
 - A `thread`(or `lightweight` process) is a basic util of CPU utilization
 - Thread의 구성
 	- program counter
@@ -33,6 +100,38 @@
 	- data section
 	- OS resources
 - 전통적인 개념의 heavyweight process는 하나의 thread를 가지고 있는 task로 볼 수 있다.
+
+- web browser에서 스레드로 여러개 만들거나, 보안 위해 각각 프로세스로.
+	- 여튼 구현하기 나름이다.
+
+### 쓰레드의 장점
+- 다른 스레드로 구성된 데스크 구조에서는 하나의 서버 스레드가 blocked(waiting)상태인 동안에도 동일한 데스크 내의 다른 스레드가 실행(running)되어 빠른 처리를 할 수 있다.
+- 동일한 일을 수행하는 다중 스레드가 협력하여 높은 처리율(throughput)과 성능 향상을 만들 수 있다.
+- 스레드를 사용하면 병렬성을 높일 수 있다.
+ex) 하나의 스레드가 웹페이지에 이미지를 받아오는 동안에 화면에 표시할 수 있는 텍스트라도 먼저 표시를 해주면..
+
+### Thread
+- OS관리용 정보
+	- Pointer, Process state, process number
+- CPU관련 정보(Thread)
+	- program counter, register
+- 자원 관련 정보
+	- memory limits
+	- list of open files
+
+### Benefits of threads
+- Responsiveness
+- Resource sharing
+- economy 
+	- createing & cpu switching thread (rather than a process)
+	- ex)solaris, overhead 30배, 5배
+- utilization of MP architecture
+	- each thread may be running in parallel on a different processor
+
+### Implementation of Thread
+- Some are supported by kernel (운영체제가 스레드의 존재를 앎. 서로 다른 스레드가 마치 프로세스처럼 보여서 CPU스케쥴링을 할 때 A라는 스레드에서 B라는 스레드로 프로세스를 넘겨야지) => Kernel Threads
+- Others are supported by library(운영체제가 스레드의 존재를 모름, 프로세스 내부에서 A라는 스레드를 실행하다가 A가 I/O를 하러가면 운영체제에게 비동기식 입출력을 요청해서 바로 CPU를 받고 B라는 스레드한테 스레드를 넘기고) => User Threads
+- Some are real-time threads
  
 # [9강. 프로세스 관리 3]
 ### 스케쥴러(scheduler)
