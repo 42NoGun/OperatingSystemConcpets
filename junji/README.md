@@ -15,6 +15,77 @@
 
 > keyword
 ```
+fork()
+exec()
+wait()
+exit()
+프로세스간 협력
+	- 통신(IPC)
+		- message passing
+		- shared memory
+```
+## [13강. CPU 스케쥴링 1]
+- execlp 설명
+
+### wait()시스템 콜
+- sleep until child is done
+- 프로세스 A가 wait() 시스템 콜을 호출하면
+	- 커널은 child가 종료될 떄까지 프로세스 A를 sleep시킨다(block 상태)
+	- child process가 종료되면 커널은 프로세스 A를 깨운다.(ready 상태)
+
+### exit()시스템 콜
+- free all the resources, notify parent
+- 프로세스의 종료
+	- 자발적 종료
+		- 마지막 statement 수행 후 exit()시스템 콜을 통해
+		- 프로그램에 명시적으로 적어주지 않아도 main 함수가 리턴되는 위치에 컴파일러가 넣어줌
+	- 비자발적 종료
+		- 부모 프로세스가 자식 프로세스를 강제 종료시킴
+			- 자식 프로세스가 한계치를 넘어서는 자원 요청
+			- 자식에게 할당된 테스크가 더 이상 필요하지 않음
+		- 키보드로 kill, break  등을 친 경우 // 윈도우 x, ctrl c
+		- 부모가 종료하는 경우 
+			- 부모 프로세스가 종료하기 전에 자식들이 먼저 종료됨.
+
+### 프로세스 간 협력
+- 독립적 프로세스(Independent process)
+	- 프로세스는 각자의 주소 공간을 가지고 수행되므로 원칙적으로 하나의 프로세스는 다른 프로세스의 수행에 영향을 미치지 못함
+- 협력 프로세스(Cooperating process)
+	- 프로세스 협력 메커니즘을 통해 하나의 프로세스가 다른 프로세스의 수행에 영향을 미칠 수 있음.
+- 프로세스간 협력 메커니즘(IPC, interprocess communication)
+	- 메시지를 전달하는 방법
+		- message passing: 커널을 통해 메시지 전달
+	- 주소 공간을 공유하는 방법
+		- shared memory : 서로 다른 프로세스 간에도 일부 주소 공간을 공유하게 하는 shared memory 메커니즘이 있음
+		cf. thread : thread는 사실상 하나의 프로세스이므로 프로세스 간 협력으로 보기는 어렵지만 동일한 process를 구성하는 thread간에는 주소 공간을 공유하므로 협력이 가능.
+
+### Message Passing
+- 프로세스 사이에 공유 변수(shared variable)를 일체 사용하지 않고 통신하는 시스템.
+	- Direct communication
+		- 통신하려는 프로세스의 이름을 명시적으로 표시
+	- Indirect communication
+		- mailbox(또는 port)를 통해 메시지를 간접 전달
+(사이에 커널이 껴 있다)
+		
+### Shared Memory
+- 커널에게 이 부분을 공유하겠습니다. 요청
+- 이 프로세스가 서로 신뢰할 수 있는가? (전제)
+
+> 9.26(화)
+```
+- synchornous I/O
+- asynchronus I/O
+- DMA
+- 저장장치 계층 구조(캐싱)
+
+동기, 비동기
+blocked, non-blocked
+
+동기/blocked, non-blokced
+```
+
+> keyword
+```
 프로세스 생성
 fork
 exec
@@ -36,6 +107,7 @@ exec
 	- 자식이 종료(terminate)될 떄까지 부모가 기다리는(wait)모델 
 
 ### fork() 시스템 콜
+- create a child(copy)
 - 주소 공간(Adress space) // code data stack
 	- 자식은 부모의 공간을 복사함(binary and OS data)
 	- 자식은 그 공간에 새로운 프로그램을 올림
@@ -63,6 +135,7 @@ else // child
 > keyword
 
 ### exec()시스템 콜
+- overlay new image
 ```c
 int main(void)
 {
@@ -314,12 +387,6 @@ Context switch
 - DMA
 ```
 
-> 9.26(화)
-```
-- synchornous I/O
-- asynchronus I/O
-- 저장장치 계층 구조(캐싱)
-```
 
 # [6강. 컴퓨터 시스템 구조] 
 - 인터럽트가 들어오면 프로그램 카운터는 운영체제를 가리킨다. register에 program counter가 있는데 이는 다음 기계어를 실행할 위치를 가리키고. 운영체제 코드가 실행될 때 mode bit0. mode bit1(제한된 기계어만 실행)
