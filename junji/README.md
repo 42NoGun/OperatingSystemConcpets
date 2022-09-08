@@ -13,6 +13,70 @@
 - 입출력 시스템
 - 디스크 관리
 
+// 나는 blocked I/O의 경우 CPU제어권이 P0->운영체제->P0이고 이 과정중에는 컨텍스트 스위치가 실행되지도 않는다. 그래서 프로세스의 상태도 Running중으로 계속 보는 것이다. (CPU가 운영체제에 있더라도 프로세스는 실행중 상태에 있으니까) -> 넌 굉장히 중요한 I/O다. 완료되자마자 Ready queue에 들어가는 것이 아닌, 바로 실행되어야 한다.
+
+// 나는 non_blocked I/O의 경우CPU제어권이 P0->운영체제, P1(운영체제는 I/O device queue에 던지고, P1에게 CPU를 준다) 컨텍스트 스위치가 일어났고, 프로세스의 상태 P0은 blocked이며, P1은 Running상태인 것이다.
+
+## [14강. CPU 스케쥴링 2]
+### CPU and I/O Bursts in Program Execution
+- CPU burst (CPU를 가지고 기게어를 실행)
+- I/O burst (I/O단계)
+	 - CPU를 길게 쓰는 프로그램(CPU bound job)
+	 - I/O를 많이 쓰는 프로그램(I/O bound job)
+- cpu 스케쥴링을 할 때 I/O bound job에게 먼저 cpu를 주는 방법이 필요하겠다. (CPU스케쥴링이 필요하다)
+	- interactive job에게 적절한 response 제공..
+
+### 프로세스의 특성 분류
+- I/O-bound process
+	- CPU를 잡고 계산하는 시간보다 I/O에 많은 시간이 필요한 job
+	- (many short CPU bursts)
+- CPU-bound process
+	- 계산 위주의 job
+	- (few very long CPU bursts)
+
+### CPU Scheduler & Dispatcher
+- CPU Scheduler
+	- Ready 상태의 프로세스 중에서 이번에 CPU를 줄 프로세스를 고른다.
+- Dispatcher
+	- CPU의 제어권을 CPU scheduler에 의해 선택된 프로세스에게 넘긴다.
+	- 이 과정을 context switch(문맥 교환)이라고 한다.
+- CPU 스케쥴링이 필요한 경우는 프로세스에게 다음과 같은 상태 변화가 있는 경우이다.
+	- Running -> Blocked (ex: I/O) // I/O가 하는 친구가 자진적으로 CPU를 내려논다고?
+	- Running -> Ready (ex: 할당시간 만료로 timer interrupt)
+	- Blocked -> Ready (ex: I/O 완료 후 인터럽트) 
+	- Terminate
+- 1,4에서 스케쥴링은 non-preemptive(=강제로 빼앗지 않고 자진 반납)
+- all other scheduling is preemptive(=강제로 빼앗음)
+
+### Scheduling Criteria
+- 1. CPU utilization(이용률)
+	- keep the CPU as busy as possible
+- 2. Throughput(처리량)
+	- of processes that complete their execution per time unit
+- 3. Turnaround time(소요시간, 반환시간)
+	- amount of time to execute a particular process
+- 4. Waiting time(대기시간)
+	- amount of time a process has benn waiting in the ready queue
+- 5. Response time(응답시간)
+	- amount of time it takes from when a request was submitted until the first response is produced, not output
+ 
+### 
+> 2022.09.08(목)
+```
+- 프로그램 실행 (메모리 + disk) => virtual memory
+- virtual memory
+	- stack
+	- data
+	- code
+	- heap
+- 커널 memory
+	- code : 커널 코드(인터럽트, 자원 처리)
+	- data : PCB, CPU, MEM, DISK
+	- stack : `process A의 커널 스택` `프로세스 B의 커널 스택`
+- 시스템콜(user->kernel->user)	
+
+- PCB
+```
 > keyword
 ```
 fork()
@@ -71,7 +135,7 @@ exit()
 - 커널에게 이 부분을 공유하겠습니다. 요청
 - 이 프로세스가 서로 신뢰할 수 있는가? (전제)
 
-> 9.26(화)
+> 9.26(수)
 ```
 - synchornous I/O
 - asynchronus I/O
@@ -310,6 +374,7 @@ CPU를 계속 쓰고 싶은데 못 쓰는 경우
 	- CPU를 내어주는 프로세스의 상태를 그 프로세스의 PCB에 저장
 	- CPU를 새롭게 얻는 프로세스의 상태를 PCB에서 읽어옴.
 - 기존 프로세스 cache memory를 싹다 비워야하는 비용이 되게 크다고 하더라(flush)
+
 ```
 CPU가 하나의 프로세스에서 다른 프로세스로 넘어가는 과정을 의미.
 문맥교환과 문맥교환 아닌게 있다.
@@ -323,7 +388,7 @@ Context switch
 1. timer
 2. I/O 
 ```
-
+```
 ### 프로세스를 스케쥴링하기 위한 큐
 - job queue
 	- 현재 시스템 내에 있는 모든 프로세스의 집합
@@ -437,10 +502,10 @@ Context switch
 ### 동기식 입출력과 비동기식 입출력
 - 동기식 입출력(synchronous I/O)
 	- I/O 요청 후 입출력 작업이 완료된 후에야 제어가 사용자 프로그램에 넘어감.
-	- 구현방법 1
+	- 구현방법 1 (blocked I/O)
 		- I/O가 끝날 때까지 CPU 낭비시킴
 		- 매시점 하나의 I/O만 일어날 수 있음
-	- 구현방법 2
+	- 구현방법 2 (non-blocked I/O)
 		- I/O가 완료될 때까지 해당 프로그램에서 CPU 빼았음
 		- I/O처리를 기다리는 중 그 프로그램을 줄 세움
 		- 다른 프로그램에게 CPU를 줌
