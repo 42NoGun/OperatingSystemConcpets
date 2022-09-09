@@ -13,6 +13,93 @@
 - 입출력 시스템
 - 디스크 관리
 
+## [15강. CPU 스케쥴링 3]
+### FCFS(First-Come First-Served)
+- Convoy effect (short process behind long process)
+ 
+### SJF(Shortest Job First)
+- 각 프로세스의 다음번 CPU burst time을 가지고 스케줄링에 활용
+- CPU burst time이 가장 짧은 프로세스를 제일 먼저 스케줄
+	- Nonpreemptive
+		- 일단 CPU를 잡으면 이번 CPU burst가 완료될 때까지 CPU를 선점(preemption) 당하지 않음
+	- Preemptive (더 짧음)
+		- 현재 수행중인 프로세스의 남은 burst time보다 더 짧은 CPU burst time을 가지는 새로운 프로세스가 도착하면 CPU를 빼앗김
+		- 이 방법을 Shortest-Remaining-Time-First(SRTF)이라고도 부른다.
+- SJF is optimal
+	- 주어진 프로세스들에 대해 minimum average waiting time을 보장.
+- 문제
+	- Starvation
+	- 다음 CPU Burst Time 예측
+		- 추정만이 가능하다.
+		- 과거의 CPU burst time을 이용해서 추정
+			- 식의 의미: n+1번째 CPU burst time = 바로 직전의 CPU burst값하고 n번째 예측했던 값을 더한다. (가중치를 해준다)
+			- 식을 풀게되면 후속 term은 선행 term보다 적은 가중치 값을 지닌다. (exponential average)
+
+### SRTF(Shortest-Remaining-Time-First)
+ 
+### Priority Scheduling
+- A priority number(integer) is associated with each process.
+- highest priority를 가진 프로세스에게 CPU할당(smallest integer = highest priority)
+	- Preemptive
+	- nonpreempive
+- SJF는 일종의 priority scheduling이다.
+	- priority = predicted next CPU burst time
+- Problem
+	- starvation : low priority processes may never execute.
+- Solution
+	- Aging : as time progresses increase the priority of the process.
+
+### RR (Round Robin)
+- 각 프로세스는 동일한 크기의 할당 시간(time quantum)을 가짐 (일반적으로 10~100 millisecond)
+- 할당 시간이 지나면 프로세스는 선점(preemptive)당하고 ready queue의 제일 뒤에 가서 다시 줄을 선다.
+- n개의 프로세스가 ready queue에 있고 할당 시간이 q time unit인 경우 각 프로세스는 최대 q time unit 단위로 CPU 시간의 1/n을 얻는다.
+	- 어떤 프로세스도 (n-1)q time unit이상 기다리지 않는다.
+- Performances
+	- q large = FCFS
+	- q small = context switch 오버헤드가 커진다.
+- 일반적으로 SJF보다 average turnaround time이 길지만 Response time(응답시간)이 짧다.
+- 비슷한 잡들이 있을 때 쓰면 비효율.
+- 기다리는 시간이 본인의 CPU사용시간에 비례하므로 굉장히 공평하다.
+
+### Multilevel Queue
+- CPU는 하난데 여러줄
+- Ready queue를 여러 개로 분할
+	- foreground(interactive)
+	- background(batch - no human interface)
+- 각 큐는 독립적인 스케쥴링 알고리즘을 가짐
+	- foreground - RR
+	- background - FCFS
+- 큐에 대한 스케줄링이 필요
+	- Fixed priority scheduling
+		- serve all from foreground then from background.
+		- possibility of starvation
+	- Time slice
+		- 각 큐에 CPU tim을 적절한 비율로 할당
+		- Eg. 80% to foreground in RR, 20% to background in FCFS
+		 
+### Multilevel Feedback Queue
+- 프로세스가 다른 큐로 이동 가능
+- 에이징(aging)을 이와 같은 방식으로 구현할 수 있다.
+- Multilevel-feedback-queue scheduler를 정의하는 파라미터들
+	- Queue의 수
+	- 각 큐의 scheduling algorithm
+	- process를 상위 큐로 보내는 기준
+	- process를 하위 큐로 내쫓는 기준
+	- 프로세스가 CPU 서비스를 받으려 할 때 들어갈 큐를 결정하는 기준
+
+### Multiple-Processor Scheduling (CPU가 여러개 있는 환경)
+- CPU가 여러 개인 경우 스케줄링은 더욱 복잡해짐
+- Homogeneous processor인 경우 (역량이 똑같은 CPU)
+	- Queue에 한줄로 세워서 각 프로세서가 알아서 꺼내가게 할 수 있다.
+	- 반드시 특정 프로세서에서 수행되어야 하는 프로세스가 있는 경우에는 문제가 더 복잡해짐
+- Load sharing
+	- 일부 프로세서에 job이 몰리지 않도록 부하를 적절히 공유하는 메커니즘이 필요
+	- 별개의 큐를 두는 방법 vs 공동 큐를 사용하는 방법
+- Symmetric Multiprocessing(SMP)
+	- 각 프로세서가 각자 알아서 스케쥴링 결정
+- Asymmetric multiprocessing
+	- 하나의 프로세서가 시스템 데이터의 접근과 공유를 책임지고 나머지 프로세서는 거기에 따름
+
 // 나는 blocked I/O의 경우 CPU제어권이 P0->운영체제->P0이고 이 과정중에는 컨텍스트 스위치가 실행되지도 않는다. 그래서 프로세스의 상태도 Running중으로 계속 보는 것이다. (CPU가 운영체제에 있더라도 프로세스는 실행중 상태에 있으니까) -> 넌 굉장히 중요한 I/O다. 완료되자마자 Ready queue에 들어가는 것이 아닌, 바로 실행되어야 한다.
 
 // 나는 non_blocked I/O의 경우CPU제어권이 P0->운영체제, P1(운영체제는 I/O device queue에 던지고, P1에게 CPU를 준다) 컨텍스트 스위치가 일어났고, 프로세스의 상태 P0은 blocked이며, P1은 Running상태인 것이다.
