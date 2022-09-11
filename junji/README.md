@@ -13,7 +13,89 @@
 - 입출력 시스템
 - 디스크 관리
 
-## [15강. CPU 스케쥴링 3]
+
+# [18강. 병행제어I 2]
+- 데이터의 접근: Race condition
+- 설령 CPU가 하나 있더라도(시스템 콜 중 다른 프로세스에게 넘어가고, 그 프로세스가 시스템 콜에서 공유하는 데이터 값을 변경시킨 후 운영체제가 처음 프로세스에 데이타에 대한 시스템 콜을 할 때, 문제가 생김)
+
+### OS에서 race condition은 언제 발생하는가? // 프로세스들간에는 주소공간을 침범하지 않지만, 커널은 공유데이타로 볼 수 있음.
+1. Kernel 수행 중 `인터럽트` 발생 시
+2. Process가 `System call`을 하여 kernel mode로 수행 중인데 context switch가 일어나는 경우
+3. Multiprocessor에서 shared memory 내의 kernel data
+
+### 1/3 If you preempt CPU while in kernel mode...
+1. system call read()
+2. Time quantum expires & ..
+- 커널 모드에서 수행 중일 때는 CPU를 preempt하지 않음.
+- 커널 모드에서 사용자 모드로 돌아올 때 preempt
+
+### 2/3 interrupt
+
+### 3/3 multiprocessor
+- CPU가 여러개 있어도 운영체제가 실행될 때 문제가 되는 것이다.
+- 어떤 CPU가 마지막으로 count를 store했는가? -> race condition. 
+	- interrupt enable/disable로 해결되지 않음
+1. 한번에 하나의 CPU만이 커널에 들어갈 수 있게 하는 방법
+2. 커널 내부에 있는 각 공유 데이터에 접근할 때마다 그 데이터에 대한 lock/ unlock기법 적용.
+
+### Process Synchronization 문제
+- 공유데이터(shared data)의 동시 접근(concurrent access)은 데이터의 ㄷ불일치 문제(inconsistency)를 발생시킬 수 있다.
+- 일관성(consistency)유지를 위해서는 협력 프로세스(cooperating process)간의 실행 순서(orderly execution)을 정해주는 메커니즘 필요
+
+- Race condition
+	- 여러 프로세스들이 동시에 공유 데이터를 접근하는 상황
+	- 데이터의 최종 연산 결과는 마지막에 그 데이터를 다룬 프로세스에 따라 달라짐.
+- Race condition을 막기 위해서는 concurrent process는 동기화(synchronize)되어야 한다.
+
+### The critical-Section Problem
+- n개의 프로세스가 공유 데이터를 동시에 사용하기를 원하는 경우
+- 각 프로세스의 code segment에는 공유 데티러를 접근하는 코드인 critical section이 존재
+- problem
+	- 하나의 프로세스가 critical section에 있을 때 다른 모든 프로세스는 critical section에 들어갈 수 없어야 한다.
+
+> Keyword
+```
+```
+
+# [17강. 병행제어I 1]
+
+### Multiple-Processor Scheduling (CPU가 여러개 있는 환경)
+- CPU가 여러 개인 경우 스케줄링은 더욱 복잡해짐
+- Homogeneous processor인 경우 (역량이 똑같은 CPU)
+	- Queue에 한줄로 세워서 각 프로세서가 알아서 꺼내가게 할 수 있다.
+	- 반드시 특정 프로세서에서 수행되어야 하는 프로세스가 있는 경우에는 문제가 더 복잡해짐
+- Load sharing(Load balancing)
+	- 일부 프로세서에 job이 몰리지 않도록 부하를 적절히 공유하는 메커니즘이 필요
+	- 별개의 큐를 두는 방법 vs 공동 큐를 사용하는 방법
+- Symmetric Multiprocessing(SMP) // CPU들이 대등
+	- 각 프로세서가 각자 알아서 스케쥴링 결정
+- Asymmetric multiprocessing // 대장 CPU
+	- 하나의 프로세서가 시스템 데이터의 접근과 공유를 책임지고 나머지 프로세서는 거기에 따름
+
+### Real-Time Scheduling // Deadline을 지키는 것이 중요하다.
+- Hard real-time systems // 미리 스케쥴링을 해놓고 그거대로 따르게(offline)
+	- Hard real-time task는 정해진 시간 안에 반드시 끝내도록 스케줄링해야 함.
+- Soft real-time computing
+	- Soft real-time task는 일반 프로세스에 비해 높은 priority를 갖도록 해야 함.
+
+### Thread Scheduling // 운영체제가 직접 스케줄링을 하냐? 존재를 모른다면 그냥 프로세스에게 CPU를 줄 뿐.
+- Local Scheduling
+	- User level thread의 경우 사용자 수준의 thread library에 의해 어떤 thread를 스케줄할지 결정
+- Global Scheduling
+	- Kernel level thread의 경우 일반 프로세스와 마찬 가지로 커널의 단기 스케줄러가 어떤 thread를 스케줄할지 결정 // 운영체제가 별도의 스레드가 있다는 사실을 안다.
+
+### Algorithm Evaluation
+- Queuing models
+	- 확률 분포로 주어지는 arrival rate와 service rate 등을 통해 각종 performance index 값을 계산
+- Implementation(구현) & Measurement(성능 측정)
+	- 실제 시스템에 알고리즘을 구현하여 실제 작업(workload)에 대해서 성능을 측정 비교
+- Simulation(모의 실험)
+	- 알고리즘을 모의 프로그램으로 작성 후 trace를 입력으로 하여 결과 비교
+
+> keyword
+```c
+```
+## [15, 16강. CPU 스케쥴링 3, 4]
 ### FCFS(First-Come First-Served)
 - Convoy effect (short process behind long process)
  
@@ -86,19 +168,6 @@
 	- process를 상위 큐로 보내는 기준
 	- process를 하위 큐로 내쫓는 기준
 	- 프로세스가 CPU 서비스를 받으려 할 때 들어갈 큐를 결정하는 기준
-
-### Multiple-Processor Scheduling (CPU가 여러개 있는 환경)
-- CPU가 여러 개인 경우 스케줄링은 더욱 복잡해짐
-- Homogeneous processor인 경우 (역량이 똑같은 CPU)
-	- Queue에 한줄로 세워서 각 프로세서가 알아서 꺼내가게 할 수 있다.
-	- 반드시 특정 프로세서에서 수행되어야 하는 프로세스가 있는 경우에는 문제가 더 복잡해짐
-- Load sharing
-	- 일부 프로세서에 job이 몰리지 않도록 부하를 적절히 공유하는 메커니즘이 필요
-	- 별개의 큐를 두는 방법 vs 공동 큐를 사용하는 방법
-- Symmetric Multiprocessing(SMP)
-	- 각 프로세서가 각자 알아서 스케쥴링 결정
-- Asymmetric multiprocessing
-	- 하나의 프로세서가 시스템 데이터의 접근과 공유를 책임지고 나머지 프로세서는 거기에 따름
 
 // 나는 blocked I/O의 경우 CPU제어권이 P0->운영체제->P0이고 이 과정중에는 컨텍스트 스위치가 실행되지도 않는다. 그래서 프로세스의 상태도 Running중으로 계속 보는 것이다. (CPU가 운영체제에 있더라도 프로세스는 실행중 상태에 있으니까) -> 넌 굉장히 중요한 I/O다. 완료되자마자 Ready queue에 들어가는 것이 아닌, 바로 실행되어야 한다.
 
