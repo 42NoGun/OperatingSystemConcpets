@@ -13,6 +13,179 @@
 - 입출력 시스템
 - 디스크 관리
 
+> keyword
+```c
+- 알고리즘 1, 2, 3
+- 과잉양보
+- Mutual Exclusion
+- Bounded Waiting(유한 대기)
+- Synchronization Hardware
+- semaphore
+	- basic
+	- block / wakeup implementation
+	- which is better?
+```
+# [19강. 병행제어I 3]
+- 동시접근의 해석. (CPU가 하나여도 옮겨쓰는 과정에서 발생하는 문제까지 포함)
+### Initial Attempts to Solve Problem
+```c
+do {
+	entry section
+	critical section
+	exit section
+	remainder section
+} while (1);
+```
+- 프로세스들은 수행의 동기화(synchronize)를 위해 몇몇 변수를 공유할 수 있다. 
+
+### Algorithm 1
+```c
+int turn;
+(initially) turn = 0;
+do {
+	while (turn != 0) // my turn
+	critical section
+	turn 1;           // now it's your turn
+	remainder section
+} while (1)
+```
+- Satisfies mutual exclusion, but not progress
+- 즉, 과잉양보: 반드시 한번씩 교대로 들어가야만 함(swap-turn) 그가 turn을 내 값으로 바꿔줘야만 내가 들어갈 수 있음. 특정 프로세스가 더 빈번히 critical section을 들어가야 한다면?
+
+### Mutual Exclusion(상호 배제)
+- 프로세스가 critical section 부분을 수행 중이면 다른 모든 프로세스들은 그들의 critical section에 들어가면 안 된다.
+ 
+### Progress
+- 아무도 critical section에 있지 않은 상태에서 critical section에 들어가고자 하는 프로세스가 있으면 critical section에 들어가게 해주어야 한다.
+ 
+### Bounded Waiting(유한대기, starvation 배제)
+- 프로세스가 critical section에 들어가려고 요청한 후부터 그 요청이 허용될 때까지 다른 프로세스들이 critical section에 들어가는 횟수에 한계가 있어야 한다.
+ 
+### 가정
+- 모든 프로세스의 수행 속도는 0보다 크다.
+- 프로세스들 간의 상대적인 수행 속도는 가정하지 않는다.
+
+### Algorithm 2
+- Synchronization variables
+	- boolean flag[2]
+	- (initially) flag[모두] = false;
+	- p1 ready to enter its critical section (if flag[i] == true)
+```c
+do {
+	flag[i] = true; // pretend i am in
+	while (flag[j]); // is he also In? then wait 
+	critical section
+	flag[i] = false;
+	remainder section;
+} while (1);
+- Satisfies mutual exclusion, but not progress requirement
+- 둘 다 2행까지 수행 후 끊임 없이 양보하는 상황 발생 가능.
+```
+
+### Algorithm 3(Peterson's algorithm)
+```c
+do {
+	flag[i] = true;
+	turn = j;
+	while (flag[i] && turn == j)
+		;
+	critical section
+	flag[i] = false;
+	remainder section
+} while (1);
+```
+- 간단해 보이지만 굉장히 심오한 코드다. flag[i]와 turn = j순서만 바껴도 제대로 동작하지 않는다. 경우를 따져보면 알 수 있다?
+- Meets all requirement; solves the critical section problem for two processes.
+- Busy waiting! (계속 CPU와 memory를 쓰면서 wait) 스핀락.
+
+### Synchronization Hardware
+- 하드웨어적으로 Test & modify를 atomic하게 수행할 수 있도록 지원하는 경우 앞의 문제는 간단히 해결 
+```c
+Synchronization variables:
+	boolean lock = false;
+
+Process P
+	do {
+		while (Test_and_Set(lock)); // 변수의 값을 READ하고 변수를 TRUE.
+		critical section
+		lock = false;
+		remainder section
+	}
+```	
+
+### Semaphores
+- 앞의 방식들을 추상화 시킴
+- Semaphore S (추상자료형 ABT)
+	- integer variable
+	- 아래의 두 가지 atomic 연산에 의해서만 접근 가능
+		- P(S) : while (s < 0) do no-op; // P연산은 자원을 획득하는 과정
+		  		s--;
+- If positive, decrement & enter. Otherwise, wait until positive(busy-wait)
+		- V(S)               //V연산은 자원을 반납하는 과정
+				S++;
+```c
+semaphore mutex; // initially 1
+do {
+	P(mutex);	// if positive, dec & enter, Otherwise, wait
+	critical section
+	V(mutex);	// Increment semaphore
+	remainder section
+} while (1);
+```
+
+### Block / Wakeup Implementation
+```
+typedef struct
+{
+	int value; // semaphore
+	sturct process *L;	// process wait queue
+} semaphore;
+```
+- block과 wakeup을 다음과 같이 가정
+	- block : 커널은 block을 호출한 프로세스를 suspend시킴. 이 프로세스의 PCB를 semaphore에 대한 wait queue에 넣음.
+	- wakeup(P) : block된 프로세스 P를 wakeup시킴. 이 프로세스의 PCB를 ready queue로 옮김
+- ex) L->PCB->PCB->PCB
+- busy-waiting(=spin lock)은 효율적이지 못함(previous)
+- Block & wakeup(=sleep lock)방식의 구현.
+```
+P(s)
+S.value--; //0이되어있는 경우도 뺀다. 음수(여분이 없구나. process에 연결하고 잠들게 하는 거)
+if (S.value < 0)
+{
+	add this process to S.L;
+	block();
+}
+
+V(S)
+S.value++; // 양수가 된다는 보장은 없다. 누군가가 세마포어를 기다리며 잠들어 있다. 
+if (S.value <= 0)
+{
+	remove a process P from S.L;
+	wakeup(P);
+}
+```
+- 왜이렇게 했을까? 고민을 해보며 무릎을 탁
+
+### which is better?
+- Busy-wait vs block/wake up
+- Block/wakeup overhead v.s Critical section 길이
+	- Critical section의 길이가 긴 경우 Block/Wakeup이 적당
+	- Critical section의 길이가 매우 짧은 경우 Block/Wakeup 오버헤드가 bust-wait 오버헤드보다 더 커질 수 있음 (-> 강의에서, 길이가 기냐 짧냐가 아니라 경합이 더욱 빈번하게 일어나냐 아니냐로 보는게 타당하다고 함. 크리티컬 섹션이 짧다 = 경쟁이 치열하지 않다로 이해)
+	- 일반적으로는 Block/wakeup 방식이 더 좋음.
+
+### Two Types of Semaphores
+- Counting semaphore
+	- 도메인이 0이상인 임의의 정수 값
+	- 주로 resource counting에 사용
+- Binary semaphore(=mutex)
+	- 0 또는 1 값만 가질 수 있는 semaphore
+	- 주로 mutual exclusion(lock/unlock)에 사용
+
+### monitor
+
+> keyword
+```
+```
 
 # [18강. 병행제어I 2]
 - 데이터의 접근: Race condition
