@@ -14,6 +14,159 @@
 - 디스크 관리
 
 > keyword
+```
+- Deadlock
+- Bounded-buffer problem
+- Reader and writer
+- phillosopher
+```
+# [20강. 병행제어 II 1]
+### Deadlock and Starvation
+- Deadlock: 둘 이상의 프로세스가 서로 상대방에 의해 충족될 수 있는 event를 무한히 기다리는 현상
+- S와 Q가 1로 초기화된 semaphore라 하자. //2개의 자원을 모두 획득해야 일 가능하다면. 일이 다 끝내야 자원을 내놓는구조이므로. 자원을 얻는 순서를 일치시키면 데드락X
+	- P(S);			P(Q);	하나씩 차지
+	- P(Q);			P(S);	상대방 것을 요구
+	- ...			...
+	- V(S);			V(Q);	여기와야 release
+- Starvation: indefinite blocking. 프로세스가 suspend된 이유에 해당하는 세마포어 큐에서 빠져나갈 수 없는 현상
+
+### Classical problems of Synchronization
+- Bounded-Buffer Problem(Producer-consumer Problem)
+	- 공유버퍼에 락을 걸로 푸는.
+	- 유한한 버퍼이므로, 생산자 입장에서는 비어있는 버퍼가 있어야..(빈 버퍼가 자원)
+	- 소비자 입장에서는 버퍼가 채워져 있어야.. (내용이 들어있는 버퍼가 자원)
+	- mutual exclusion -> Need binary semaphore(shared data의 mutual exclusion을 위해)
+	- resource count -> Need integer semaphore(남은 full/empty buffer의 수 표시)
+	- producer
+```c
+do {
+	produce an item in x
+	...
+	P(empty);
+	P(mutex);
+	...
+	add x to buffer
+	...
+	V(mutex);
+	V(full);
+```
+	- consumer
+```c
+do {
+	P(full)
+	P(mutex);
+	...
+	remove an item from buffer to y
+	...
+	V(mutex);
+	V(empty);
+	...
+	consume the item in y
+	...
+	} while (1);
+```
+- Readers and Writers Problem
+	- 한 process가 DB에 write중일 때 다른 process가 접근하면 안됨
+	- read는 동시에 여럿이 해도 됨
+	- solution
+		- writer가 DB에 접근 허가를 아직 얻지 못한 상태에서는 모든
+		대기중인 Reader들을 다 DB에 접근하게 해준다.
+		- writer는 대기 중인 Reader가 하나도 없을 때 DB접근이 허용된다.
+		- 일단 writer가 DB에 접근 중이면 Reader들은 접근이 금지된다
+		- writer가 DB에서 빠져나가야만 Reader의 접근이 허용된다.
+	- Shared data
+		- DB자체
+		- readcount //현재 DB에 접근 중인 Reader의 수
+	- Synchronization variable
+		- mutex : 공유 변수 readcount를 접근하는 코드(critical section)의 mutual exclusion 보장을 위해 사용.
+		- db : Reader와 writer가 공유 DB자체를 올바르게 접근하게 하는 역할
+```c
+int readcount = 0;
+DB자체;
+Synchronization variable
+semaphore mutex = 1, db = 1;
+
+	Writer
+	p(db);
+	...
+	waiting DB is performed
+	...	
+	V(db);
+	
+	Reader;
+	p(mutex);
+	readcount++;
+	if (readcount == 1) p(db);// block writer
+	V(mutex);
+	...
+	reading DB is performed
+	...
+	P(mutex)
+	readcount--;
+	if (readcount == 0) V(db); //enable writer
+	V(mutex);
+```
+	- !starvation 발생 가능.
+	- 해결하려면? 일정시간까지 도착한 reader. 신호등처럼 끊어버리기. 
+- Dining-Philosophers Problem
+```c
+semaphore chopstick[5];
+
+do {
+	P(chopstck[i];
+	P(chopstick[(i + 1) % 5]);
+	...
+	eat();
+	...
+	V(chopstick[i]);
+	V(chopstick[(i + 1) % 5]);
+	...
+	think();
+	...
+} while (1);
+```
+	- 앞 solution 문제점
+		- deadlock 가능성
+		- 모든 철학자가 동시에 배가 고파서 왼쪽 젓가락을 잡아버린 경우
+	- 해결 방안
+		- 4명의 철학자만이 테이블에 동시에 앉을 수 있도록 한다.
+		- 젓가락을 두 개 모두 잡을 수 있을 때에만 젓가락을 잡을 수 있게 한다.
+		- 비대칭
+			- 짝수(홀수)철학자는 왼쪽(오른쪽) 젓가락부터 잡도록 한다.
+
+
+> 2022.8.13(화)
+```
+문맥교환 : CPU 
+문맥교환과 문맥교환이 아닌 것
+	- CPU - interrupt or systemcall - CPU : 문맥교환 아니다 (지극히 일부만 저장, 오버헤드 적음, cpu의 register값 같은거.) -> cache memory flush가 오버헤드가 가장 크다(context switch)
+	- CPU process A - CPU process B
+- 프로세스를 스케줄링하기 위한 큐
+	- job queue
+	- ready queue
+	- device queue
+스케줄러 :
+	- 장기스케줄러(long-term, job scheduler)
+		- 시작 프로세스 중 어떤 것들을 ready queue로 보낼지.
+		- 프로세스에 memory를 주는 문제
+		- degree of multiprogramming(메모리에 프로그램이 몇개 올라갔는지)을 제어
+		- time sharing system에는 보통 장기스케줄러 없음(바로 ready)
+	- 단기스케줄러
+		- 어떤 프로세스를 다음번에 running 시킬지 결정
+		- 프로세스에 CPU를 주는 문제
+		- 충분히 빨라야 함
+	- 중기스케줄러
+		- 여유 공간 마련을 위해 프로세스를 통째로 메모리에서 디스크로 쫓아냄
+		- 프로세스에서 memory를 뺏는 문제
+- 프로세스의 상태
+	- running
+	- ready
+	- blocked
+	- suspended(stopped) - 중기스케줄러에 의해 쫓겨난, 이외에도 있음(외부적인 요인). 운영체제가 메모리가없어서 프로세스를 쫓아냄. 사람이 프로세스를 갑자기 정지(리눅스환경에서 CTRL + Z)
+- blocked 와 suspended 둘다 CPU가 없음. process는 일을하고 있는 상태. ssuspended는 멈춰있는 상태.
+```
+
+> keyword
 ```c
 - 알고리즘 1, 2, 3
 - 과잉양보
