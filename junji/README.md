@@ -13,14 +13,124 @@
 - 입출력 시스템
 - 디스크 관리
 
-> keyword
-```
-- 교착상태
-- Deadlock발생 4가지 조건
-- Deadlock Prevention
+# [24강. 메모리관리 I]
+### Logical vs Physical Address
+- Logical address(virtual address)
+	- 프로세스마다 독립적으로 가지는 주소 공간
+	- 각 프로세스마다 0번지부터 시작
+	- CPU가 보는 주소는 logical address임
+- Physical address
+	- 메모리에 실제 올라가는 위치
+- 주소 바인딩: 주소를 결정하는 것
+	 - symbolic address -> logical address -> physical address
+
+### Compile time binding
+- 물리적 메모리 주소(physical address)가 컴파일 시 알려짐
+- 시작 위치 변경시 재컴파일
+- 컴파일러는 절대 코드(absolute code)생성
+
+### Load time binding
+- Loader의 책임 하에 물리적 메모리 주소 부여
+- 컴파일러가 재배치가능코드(relocatable code)를 생성한 경우 가능
+
+### Execution time binding(=Run time binding)
+- 수행이 시작된 이후에도 프로세스의 메모리 상 위치를 옮길 수 있음
+- CPU가 주소를 참조할 때마다 binding을 점검 (address mapping table)
+- 하드웨어적인 지원이 필요(e.g base and limit registers. MMU)
+cf. CPU가 바라보는 주소는 물리적인 주소일까? 논리적인 주소일까?
+cpu기계어안에 들어간 주소가 논리적인 주소니까!
+cf. 메모리 주소를 변환하는 일은 운영체제가 하는 일이 아니다. 하드웨어가 하는 일이다. 운영체제가 할려면 자기가 CPU를 잡아서 본인의 코드 실행을 통해서 일을 하는 건데, 메모리 한번 접근하자고 사용자프로그램이 운영체제를 부른다는 건 말이 안됨.
+
+### Memory-Management Unit (MMU)
+- MMU
+	- logical address를 physical address로 매핑해주는 Hardware device
+- MMU scheme
+	- 사용자 프로세스가 CPU에서 수행되며 생성해내는 모든 주소값에 대해 base register(=relocation register)의 값을 더한다.
+- user program
+	- logical address만을 다룬다.
+	- 실제 physical address를 볼 수 없으며 알 필요가 없다.
+
+### Hardware Support for Address Translation
+- 운영체제 및 사용자 프로세스 간의 메모리 보호를 위해 사용되는 레지스터
+	- Relocation register(=base register) : 접근할 수 있는 물리적 메모리 주소의 최소값
+	- Limit register : 논리적 주소의 범위
+
+### Dynamic Loading
+- 프로세스 전체를 메모리에 미리 다 올리는 것이 아니라 해당 루틴이 불려질 때 메모리에 load하는 것
+- memory utilization의 향상
+- 가끔씩 사용되는 많은 양의 코드의 경우 유용
+- 운영체제의 특별한 지원 없이 프로그램 자체에서 구현 가능(OS는 라이브러리를 통해 지원 가능) cf. 오리지널 다이나믹 로딩. 현재는 운영체제가 올리는 것도 다이나믹 로딩이라고 함.
+*Loading: 메모리로 올리는 것
+
+### Overlays //프로그래머 책임으로 ... 메모리가 굉장히 작던 시절
+- 메모리에 프로세스의 부분 중 실제 필요한 정보만을 올림
+- 프로세스의 크기가 메모리보다 클 때 유용
+- 운영체제의 지원없이 사용자에 의해 구현
+- 작은 공간의 메모리를 사용하던 초창기 시스템에서 수작업으로 프로그래머가 구현
+	- Manual Overlay
+	- 프로그래밍이 매우 복잡
+
+### Swapping
+- 프로세스를 일시적으로 메모리에서 backing store로 쫓아내는 것
+- Backing store(=swap area)
+	- 디스크 : 많은 사용자의 프로세스 이미지를 담을 만큼 충분히 빠르고 큰 저장공간
+- Swap in / Swap out
+	- 일반적으로 중기 스케줄러(swapper)에 의해 swap out 시킬 프로세스 선정
+	- priority-based CPU scheduling algorithm
+		- priority가 낮은 프로세스를 swapped out시킴
+		- priority가 높은 프로세스를 메모리에 올려 놓음
+	- Compile time 혹은 load time binding에서는 원래 메모리 위치로 swap in
+	- Execution time binding에서는 추후 빈 메모리 영역 아무 곳에나 올릴 수 있음.
+	- swap time은 대부분 transfer time(swap 되는 양에 비례하는 시간)임
+
+# [23강. 데드락]
+### Deadlock Avoidance 
+- 시스템이 safe state에 있으면
+	-> no deadlock
+- 시스템이 unsafe state에 있으면
+	-> possibility of deadlock
 - Deadlock Avoidance
-- Resource Allocation Graph algorithm
-```
+	- 시스템이 unsafe state에 들어가지 않는 것을 보장
+	- 2가지 경우의 avoidance 알고리즘
+		- Single instance per resouce types
+			- Resource Allocation Graph algorithm
+		- Multiple instances per resource types
+			- Banker's Algorithm
+### Banker's algorithm
+- 자원의 여유가 있더라도, 혹시 자원을 최대한 요청했을 떄 그 요청을 여유있는 가용자원으로 처리하지 못한다면 데드락이 생길 수 있으므로, 그 요청을 받아들이지 않는다. (가용자원만 가지고 판단)
+
+### Deadlock Detection 
+- Deadlock Detection
+	- Resource type당 single instance인 경우
+		- 자원할당 그래프에서의 cycle이 곧 deadlock을 의미
+	- Resource type 당 multiple instance인 경우
+		- banker's algorithm과 유사한 방법 활용
+- wait for graph 알고리즘
+	- Resource type당 single instance인 경우
+	- wait-for graph
+		- 자원할당 그래프의 변형
+		- 프로세스만으로 node 구성
+		- Pi가 가지고 있는 자원을 Pj가 기다리는 경우 pj->pi
+	- Algorithm
+		- Wait-for graph에 사이클이 존재하는지를 주기적으로 조사
+- 굉장히 낙관적으로 보는 알고리즘이고, 자원 반납이 완료가능한 프로세스의 자원을 합하더라도, 어떤 요청을 처리해서 추가적인 반납을 할 수 없는 경우에 데드락으로 본다.
+ 
+### Recovery
+- Process termination
+	- About all deadlocked process
+	- Abort one process at a time until the deadlock cycle is eliminated- Resource Preemption
+	- 비용을 최소화할 victime의 선정
+	- safe state로 rollback하여 process를 restart
+	- starvation 문제
+		- 동일한 프로세스가 계속해서 victim으로 선정되는 경우
+		- const factor에 rollback 횟수도 같이 고려
+
+### Deadlock Ignorance
+- Deadlock이 일어나지 않는다고 생각하고 아무런 조치도 취하지 않음
+	- Deadlock이 매우 드물게 발생하므로 Deadlock에 대한 조치 자체가 더 큰 overhead일 수 있음
+	- 만약, 시스템에 deadlock이 발생한 경우 시스템이 비정상적으로 작동하는 것을 사람이 느낀 후 직접 process를 죽이는 등의 방법으로 대처
+	- UNIX, Windows 등 대부분의 범용 OS가 채택
+
 # [22강. 병행제어 III 3]
 ### 교착상태(deadlock)
 ### The Deadlock Problem
@@ -36,6 +146,7 @@
 		- 프로세스 P1과 P2 각각이 하나의 tape drive를 보유한 채 다른 하나를 기다리고 있다.
 	- Deadlock Example 2
 		- Binary semaphores A and B
+
 ### Deadlock 발생의 4가지 조건
 - Mutual exclusion
 	- 매 순간 하나의 프로세스만이 자원을 사용할 수 있음
@@ -50,7 +161,9 @@
 		- p1은 p2가 가진 자원을 기다림
 		- p(n-1)은 p(n)이 가진 자원을 기다림
 		- pn 은 p0을 가진 자원을 기다림.
+		 
 ### 자원 할당 그래프
+
 ### Deadlock의 처리 방법
 - Deadlock prevention
 	- 자원 할당 시 deadlock의 4가지 필요 조건 중 어느 하나가 만족되지 않도록 하는 것
