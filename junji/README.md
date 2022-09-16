@@ -13,6 +13,29 @@
 - 입출력 시스템
 - 디스크 관리
 
+# [25강. 메모라괸리 II]
+### Paging
+- Paging
+	- Process의 virtual memory를 동일한 사이즈의 page단위로 나눔
+	- Virtual memory의 내용이 page 단위로 noncontiguous하게 저장됨
+	- 일부는 backing storage에, 일부는 physical memory에 저장
+- Basic Method
+	- physical memory를 동일한 크기의 frame으로 나눔
+	- logical memory를 동일 크기의 page로 나눔(frame과 같은 크기)
+	- 모든 가용 frame들을 관리
+	- page table을 사용하여 logical address를 physical address로 변환
+	- External fragmentation 발생 안함
+	- Internal fragmentation 발생 가능
+- 4GB를 4KB(페이지)나누면 1MB(백만개), 즉 page table도 엔트리가 100만개.- 그럼 32비트 주소에서, 페이지 번호와 오프셋은 몇비트일까? 
+
+### Implementation of Page Table
+- Page table은 main memory에 상주
+- Page-table base register(PTBR)가 page table을 가리킴
+- Page-table length register(PLTR)가 테이블 크기를 보관
+- 모든 메모리 접근 연산에는 2번의 memory access 필요
+- page table 접근 1번, 실제 data/instruction 접근 1번
+- 속도 향상을 위해 associative register 혹은 translation look-aside buffer(TLB)라 불리는 고속의 lookup hardware cache 사용
+
 # [24강. 메모리관리 I]
 ### Logical vs Physical Address
 - Logical address(virtual address)
@@ -80,9 +103,84 @@ cf. 메모리 주소를 변환하는 일은 운영체제가 하는 일이 아니
 		- priority가 낮은 프로세스를 swapped out시킴
 		- priority가 높은 프로세스를 메모리에 올려 놓음
 	- Compile time 혹은 load time binding에서는 원래 메모리 위치로 swap in
-	- Execution time binding에서는 추후 빈 메모리 영역 아무 곳에나 올릴 수 있음.
+	- Execution time binding에서는 추후 빈 메모리 영역 아무 곳에나 올릴 수 있음.  (wapping이 잘 지원되려면 runtime binding이 잘 지원되어야 한다.)
 	- swap time은 대부분 transfer time(swap 되는 양에 비례하는 시간)임
+		(원래는 diskhead시간이 대부분이었는데, 여기에선 이례적으로(그 이유는 양이 너무 많아서) transfer time이 대부분)
 
+### Dynamic Linking
+- Linking을 실행 시간(execution time)까지 미루는 기법
+- Static linking (static library)
+	- 라이브러리가 프로그램의 실행 파일 코드에 포함됨
+	- 실행 파일의 크기가 커짐
+	- 동일한 라이브러리를 각각의 프로세스가 메모리에 올리므로 메모리 낭비(printf 함수의 라이브러리 코드)
+(라이브러리가 내 실행파일 안에 포함되어 있다-> 스태틱)
+- Dynamic linking (shared library) shared object (.so .dll)
+	- 라이브러리가 실행시 연결(link)됨
+	- 라이브러리 호출 부분에 라이브러리 루틴의 위치를 찾기 위한 stub라는 작은 코드를 둠
+	- 라이브러리가 이미 메모리에 있으면 그 루틴의 주소로 가고 없으면 디스크에서 읽어옴
+	- 운영체제의 도움이 필요
+
+### Allocation of Physical Memory
+- 메모리는 일반적으로 두 영역으로 나뉘어 사용
+	- OS 상주 영역
+		- interrupt vector와 함께 낮은 주소 영역 사용
+	- 사용자 프로세스 영역
+		- 높은 주소 영역 사용
+- 사용자 프로세스 영역의 할당 방법
+	- contiguous allocation (연속 할당)
+		- 각각의 프로세스가 메모리의 연속적인 공간에 적재되도록 하는 것
+		- Fixed partition allocation(고정분할 방식)
+			- 물리적 메모리를 몇 개의 영구적 분할(partition)로 나눔)
+			- 분할의 크기가 모두 동일한 방식과 서로 다른 방식이 존재
+			- 분할당 하나의 프로그램 적재
+			- 융통성이 없음
+				- 동시에 메모리에 load되는 프로그램의 수가 고정됨
+				- 최대 수행 가능 프로그램 크기 제한
+			- Internal fragmentation 발생 (external fragmentation도 발생)
+		- Variable partition allocation(가변 분할 방식)
+			- 프로그램의 크기를 고려해서 할당
+			- 분할의 크기, 개수가 동적으로 변함
+			- 기술적 관리 기법 필요
+			- External fragmentation 발생
+	- NonContiguous allocation (불연속 할당)
+		- 하나의 프로세스가 메모리의 여러 영역에 분산되어 올라갈 수 있음
+		- Paging
+		- Segmentation
+		- Paged Segmentation
+
+- 외부조각(External fragmentation)
+	- 프로그램 크기보다 분할의 크기가 작은 경우
+	- 아무 프로그램에도 배정되지 않은 빈 곳인데도 프로그램이 올라갈 수 없는 작은 분할
+- 내부조각(Internal fragmentation)
+	- 프로그램 크기보다 분할의 크기가 큰 경우
+	- 하나의 분할 내부에서 발생하는 사용되지 않는 메모리 조각
+	- 특정 프로그램에 배정되었지만 사용되지 않는 공간
+- Hole
+	- 가용 메모리 공간
+	- 다양한 크기의 hole들이 메모리 여러 곳에 흩어져 있음
+	- 프로세스가 도착하면 수용가능한 hole을 할당
+	- 운영체제는 다음의 정보를 유지
+		- a)할당 공간 b) 가용 공간(hole)
+### Dynamic Storage-Allocation Problem
+- 가변 분할 방식에서 size n인 요청을 만족하는 가장 적절한 hole을 찾는 문제
+	- First-fit
+		- Size가 n 이상인 것 중 최초로 찾아지는 hole에 할당
+	- Best-fit
+		- Size가 n이상인 가장 작은 hole을 찾아서 할당
+		- Hole들의 리스트가 크기순으로 정렬되지 않은 경우 모든 hole의 리스트를 탐색해야함
+		- 많은 수의 아주 작은 hole들이 생성됨
+	- Worst-fit
+		- 가장 큰 hole에 할당
+		- 역시 모든 리스트를 탐색해야 함
+		- 상대적으로 아주 큰 hole들이 생성됨
+- First-fit과 best-fit이 worst-fit보다 속도와 공간 이용률 측면에서 효과적인 것으로 알려짐(실험적인 결과)
+
+### compaction
+- external fragmentation 문제를 해결하는 한 가지 방법
+- 사용 중인 메모리 영역을 한군데로 몰고 hole들을 다른 한 곳으로 몰아 큰 block을 만드는 것
+- 매우 비용이 많이 드는 방법임
+- 최소한의 메모리 이동으로 compaction하는 방법(매우 복잡)
+- Compaction은 프로세스의 주소가 실행 시간에 동적으로 재배치 가능한 경우에만 수행될 수 있다.
 # [23강. 데드락]
 ### Deadlock Avoidance 
 - 시스템이 safe state에 있으면
