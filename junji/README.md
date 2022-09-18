@@ -35,7 +35,66 @@
 - 모든 메모리 접근 연산에는 2번의 memory access 필요
 - page table 접근 1번, 실제 data/instruction 접근 1번
 - 속도 향상을 위해 associative register 혹은 translation look-aside buffer(TLB)라 불리는 고속의 lookup hardware cache 사용
+cf. 캐쉬메모리가 두가지가 있다. 데이터를 위한 캐쉬메모리와 주소변환을 위한 캐쉬메모리. (주소 변환을 빠르게하는 목적인 TLB) 
 
+### Associative Register
+- Associative register (TLB) parallel search가 가능
+	- TLB에는 page table 중 일부만 존재
+- Address translation
+	- page table 중 일부가 associative register에 보관되어 있음
+	- 만약 해당 page #가 associative register에 있는 경우 곧바로 frame #을 얻음
+	- 그렇지 않은 경우 main memory에 있는 page table로부터 frame #를 얻음
+	- TLB는 context switch 때 flush(remove old entries)
+
+### effective Access time
+- Associative register lookup time = { (입실론)
+- memory cycle time = 1
+- Hit ratio = a
+	- associative register에서 찾아지는 비율
+- effective access time (EAT)
+	 <hit>		<miss>
+EAT= (1 + { )a  + (2 + })(1 - a)
+   = 2 + { - a
+   
+### Two-Level Page Table
+- 현대의 컴퓨터는 address space가 매우 큰 프로그램을 지원
+	- 32bit address 사용시 :2^32(4G)의 주소공간
+		- page size가 4K시 1M개의 page table entry 필요
+		- 각 page entry가 4B시 프로세스당 4M의 Page table 필요
+		- 그러나, 대부분의 프로그램은 4G의 주소 공간 중 지극히 일부분만 사용하므로 Page table 공간이 심하게 낭비됨
+	-> page table 자체를 page로 구성
+	-> 사용되지 않는 주소 공간에 대한 outer page table의 엔트리 값은 NULL(대응하는 inner page table이 없음) 
+
+### Two-Level Paging Example
+- logical address (on 32-bit machine with 4K page size)의 구성
+	- 20 bit의 page number
+	- 12 bit의 page offset
+- page table 자체가 page로 구성되기 때문에 page number는 다음과 같이 나뉜다(각 page table entry가 4B)
+	- 10-bit의 page number
+	- 10-bit의 page offset
+- 따라서, logical address는 다음과 같다
+	page number | page offset
+	10  	10		12
+- p1은 outer page table의 index이고,
+- p2는 outer page table의 page에서의 변위(displacement)
+
+### Multilevel Paging and Performance
+- Address space가 더 커지면 다단계 페이지 테이블 필요
+- 각 단계의 페이지 테이블이 메모리에 존재하므로 logical address의 physical addressㅂ 변환에 더 많은 메모리 접근 필요
+- TLB를 통해 메모리 접근 시간을 줄일 수 있음
+- 4단계 페이지 테이블을 사용하는 경우
+	- 메모리 접근 시간이  100ns, TLB 접근 시간이 20ns이고
+	- TLB hit ratio가 98%인 경우
+		- effective memory access time = 0.98 * 120 + 0.02 * 520 = 128nanoseconds
+		- 결과적으로 주소 변환을 위해 28ns만 소요
+
+### Memory protection
+- page table의 각 entry마다 아래의 bit를 둔다.
+	- protection bit
+		- page에 대한 접근 권한(read/write/read-only)
+	- valid-invalid bit
+		- valid는 해당 주소의 frame에 그 프로세스를 구성하는 유효한 내용이 있음을 뜻함(접근 허용)
+		- invalid는 해당 주소의frame에 유효한 내용이 없음을 뜻함(접근 불허)
 # [24강. 메모리관리 I]
 ### Logical vs Physical Address
 - Logical address(virtual address)
