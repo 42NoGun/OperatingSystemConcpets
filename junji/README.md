@@ -13,6 +13,130 @@
 - 입출력 시스템
 - 디스크 관리
 
+# [27강. 가상메모리 I]
+### Demand Paging
+- 실제로 필요할 때 page를 메모리에 올리는 것
+	- I/O양의 감소
+	- Memory 사용량 감소
+	- 빠른 응답 시간
+	- 더 많은 사용자 수용
+- Valid / Invalid bit의 사용
+	- Invaild의 의미
+		- 사용되지 않는 주소 영역인 경우
+		- 페이지가 물리적 메모리에 없는 경우
+	- 처음에는 모든 page entry가 invalid로 초기화
+	- address translation 시에 invalid bit이 set되어 있으면 => page fault
+
+### Page Fault
+- invalid page를 접근하면 MMU가 trap을 발생시킴(page fault trap)
+- Kernel mode로 들어가서 page fault handler가 invoke됨
+- 다음과 같은 순서로 page fault를 처리한다.
+	- 1. Invalid reference? (eg. bad address, protection violation) => abort process
+	- 2. Get an empty page frame. (없으면 뺏어온다:replace)
+	- 3. 해당 페이지를 disk에서 memory로 읽어온다.
+		1. disk I/O가 끝나기까지 이 프로세스는 CPU를 preempt 당함(block)
+		2. Disk read가 끝나면 page tables entry 기록, valid/invalid bit = "valid"
+		3. read queue에 process를 insert -> dispatch later
+	- 4. 이 프로세스를 CPU를 잡고 다시 running
+	- 5. 아까 중단되었던 instruction을 재개
+
+### Performance of Demand Paging
+- Page Fault Ratio
+	- if p = 0 no page fault
+	- if p = 1, every reference is a fault
+- effective access time
+	- (1 - p) * memory access
+		+ p (OS & HW page fault overhead
+		+ [swap page out if needed]
+		+ swap page in
+		+ OS & HW restart overhead)
+
+### Free frame이 없는 경우
+- Page replacement
+	- 어떤 frame을 빼앗아올지 결정해야 함
+	- 곧바로 사용되지 않을 page를 쫓아내는 것이 좋음
+	- 동일한 페이지가 여러 번 메모리에서 쫓겨났다가 다시 들어올 수 있음
+- Replacement algorithm
+	- page-fault rate를 최소화하는 것이 목표
+	- 알고리즘의 평가
+		- 주어진 page reference string에 대해 page falut를 얼마나 내는지 조사
+		- reference string의 예
+			- 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5
+
+# [26강. 메모라관리 III]
+### Memory protection
+- page table의 각 entry마다 아래의 bit를 둔다.
+	- protection bit
+		- page에 대한 접근 권한(read/write/read-only)
+	- valid-invalid bit
+		- valid는 해당 주소의 frame에 그 프로세스를 구성하는 유효한 내용이 있음을 뜻함(접근 허용)
+		- invalid는 해당 주소의frame에 유효한 내용이 없음을 뜻함(접근 불허)
+
+### Inverted Page Table
+- page table이 매우 큰 이유
+	- 모든 process 별로 그 logical address에 대응하는 모든 page에 대해 page table entry가 존재
+	- 대응하는 page가 메모리에 있든 아니든 간에 page table 에는 entry로 존재
+- inverted page table
+	- page frame 하나당 page table에 하나의 entry를 둔 것(system-wide)
+	- 각 page table entry는 각각의 물리적 메모리의 page frame이 담고 있는 내용 표시(process-id, process의 logical address)
+	- 단점
+		- 테이블 전체를 탐색해야 함
+	- 조치
+		- associative register 사용 (expensive)
+
+### Shared Page
+- Shared code
+	- Re-entrant code(=pure code)
+	- read-only로 하여 프로세스 간에 하나의 code만 메모리에 올림(eg, text editors, compilers, window systems)
+	- shared code는 모든 프로세스의 logical address space에서 동일한 위치에 있어야함.(page번호가 같아야 한다=> 이 챕터 초반에 ... 주소 바인딩 그림)
+- Private code and data
+	- 각 프로세스들은 독자적으로 메모리에 올림
+	- private data는 logical address space의 아무 곳에 와도 무방
+
+### Segmentation
+- 프로그램은 의미 단위인 여러 개의 segment로 구성
+	- 작게는 프로그램을 구성하는 함수 하나하나를 세그먼트로 정의
+	- 크게는 프로그램 전체를 하나의 세그먼트로 정의 가능
+	- 일반적으로 code, data, stack 부분이 하나씩의 세그먼트로 정의됨
+- Segment는 다음과 같은 logical unit  들임.
+	- main()
+	- function,
+	- gloval variables,
+	- stack,
+	- symbol table, arrays
+
+### Segmentation Architecture
+- Logical address는 다음의 두 가지로 구성
+	- <segment-number, offset>
+- Segment table
+	- each table entry has
+		- base - starting physical address of the segment
+		- limit - length of the segment
+	- segmentation-tables base register(STBR)
+		- 물리적 메모리에서의 segment table의 위치
+	- segment-table length register (STLR)
+		- 프로그램이 사용하는 segment의 수
+				- segment number is legal if s < STLR
+
+### Segmentation Architecture
+- Protection
+	- 각 세그먼트 별로 protection bit가 있음
+	- Each entry:
+		- valid bit = 0 -> illegal segment
+		- Read/Write/Execution 권한 bit
+- Sharing
+	- shared segment
+	- same segment number
+	cf. segment는 의미 단위이기 때문에 공유(sharing)와 보안(protection)에 있어 paging보다 훨씬 효과적이다.
+- Allocation
+	- first fit / best fit
+	- external fragmentation 발생
+	- segment의 길이가 동일하지 않으므로 가변분할 방식에서와 동일한 문제점들이 발생
+
+### segmentation with paging
+- pure segmentation과의 차이점
+	 - segment-table entry가 segment의 base address를 가지고 있는 것이 아니라 segment를 구성하는 page table의 base address를 가지고 있음.
+
 # [25강. 메모라괸리 II]
 ### Paging
 - Paging
@@ -88,13 +212,6 @@ EAT= (1 + { )a  + (2 + })(1 - a)
 		- effective memory access time = 0.98 * 120 + 0.02 * 520 = 128nanoseconds
 		- 결과적으로 주소 변환을 위해 28ns만 소요
 
-### Memory protection
-- page table의 각 entry마다 아래의 bit를 둔다.
-	- protection bit
-		- page에 대한 접근 권한(read/write/read-only)
-	- valid-invalid bit
-		- valid는 해당 주소의 frame에 그 프로세스를 구성하는 유효한 내용이 있음을 뜻함(접근 허용)
-		- invalid는 해당 주소의frame에 유효한 내용이 없음을 뜻함(접근 불허)
 # [24강. 메모리관리 I]
 ### Logical vs Physical Address
 - Logical address(virtual address)
