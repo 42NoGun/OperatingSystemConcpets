@@ -13,6 +13,38 @@
 - 입출력 시스템
 - 디스크 관리
 
+# [28강. 가상메모리 II]
+
+### 다양한 캐슁 환경
+- 캐싱 기법
+	- 한정된 빠른 공간(=캐쉬)에 요청된 데이터를 저장해 두었다가 후속 요청시 캐쉬로부터 직접 서비스하는 방식
+	- paging system 외에도 cache memory, buffer caching, web caching 등 다양한 분야에서 사용
+- 캐쉬 운영의 시간 제약
+	- 교체 알고리즘에서 삭제할 항목을 결정하는 일에 지나치게 많은 시간이 걸리는 경우 실제 시스템에서 사용할 수 없음
+	- Buffer caching이나 web caching의 경우
+		- O(1)에서 O(log n)정도까지 허용
+	- Paging system인 경우
+		- page fault인 경우에만 OS가 관여함
+		- 페이지가 이미 메모리에 존재하는 경우 참조시각 등의 정보를 OS가 알 수 없음
+		- O(1)인 LRU의 list 조작 조차 불가능
+
+### Clock Algorithm
+- Clock algorithm
+	- LRU의 근사(approximation)알고리즘
+	- 여러 명칭으로 불림
+		- Second chance algorithm
+		- NUR(Not Used Recently) 또는 NRU(Not Recently Used)
+	- Reference bit을 사용해서 교체 대상 페이지 선정 (circulart list
+	- reference bit가 0인 것을 찾을 때까지 포인터를 하나씩 앞으로 이동
+	- 포인터 이동하는 중에 reference bit 1은 모두 0으로 바꿈
+	- Reference bit이 0인 것을 찾으면 그 페이지를 교체
+	- 한 바퀴 되돌아와서도(=second chance) 0이면 그때에는 replace 당함
+	- 자주 사용되는 페이지라면 second chance가 올 때 1
+- Clock algorithm의 개선
+	- reference bit과  modified bit(diary bit)을 함께 사용
+	- reference bit = 1 : 최근에 참조된 페이지
+	- modified bit = 1 최근에 변경된 페이지(I?/ㅒO를 동반하는 페이
+
 # [27강. 가상메모리 I]
 ### Demand Paging
 - 실제로 필요할 때 page를 메모리에 올리는 것
@@ -62,6 +94,37 @@
 		- 주어진 page reference string에 대해 page falut를 얼마나 내는지 조사
 		- reference string의 예
 			- 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5
+
+### Optimal Algorithm
+- MIN(OPT) : 가장 먼 미래에 참조되는 page를 replace.
+- 4 frames example
+<사진>
+- 미래의 참조를 어떻게 아는가?
+	- offline algorithm
+- 다른 알고리즘의 성능에 대한 upper bound 제공
+	- Belady's optimal algorithm, MIN, OPT 등으로 복원
+
+### FIFO
+- 먼저 들어온 것을 먼저 내쫓음
+- FIFO anomaly(Belady's Anomaly)
+	- more frames ->(x) less page fault
+
+### LRU(Least Recently Used) , 가장 덜 최근에 사용된
+- LRU: 가장 오래 전에 참조된 것을 지움
+
+### LFU(Least Frequently Used) , 가장 덜 빈번하게 사용된
+- LFU: 참조 횟수(reference count)가 가장 적은 페이지를 지움
+	- 최저 참조 횟수인 page가 여럿 있는 경우
+		- LFU 알고리즘 자체에서는 여러 page 중 임의로 선정한다.
+		- 성능 향상을 위해 가장 오래 전에 참조된 page를 지우게 구현할 수도 있다.
+	- 장단점
+		- LRU처럼 직전 참조 시점만 보는 것이 아니라 장기적인 시간 규모를 보기 때문에 page의 인기도를 좀 더 정확히 반영할 수 있음.
+		- 참조 시점의 최근성을 반영하지 못함.
+		- LRU보다 구현이 복잡함.
+### LRU와 LFU 구현
+- LRU : 참조될 때마다 제일 아래쪽에 매달고 쫓아낼 때는 제일 위에꺼.. (비교가 필요 없음) 링크드리스트. O(1) complextity
+- LFU : 참조될 때마다 비교를 해서 어디까지 아래로 내려갈 수 있는지 확인.
+heap을 이용해서 구현 O(log n)
 
 # [26강. 메모라관리 III]
 ### Memory protection
