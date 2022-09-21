@@ -13,8 +13,59 @@
 - 입출력 시스템
 - 디스크 관리
 
-# [28강. 가상메모리 II]
+# [29강. 파일 시스템]
+### File and File System
+- File
+	- "A named collection of related information"
+	- 일반적으로 비휘발성의 보조기억장치에 저장
+	- 운영체제는 다양한 저장 장치를 file이라는 동일한 논리적 단위로 볼 수 있게 해줌
+	- Operation
+		- create, read, write, reposition(lseek), delete, open, close 등
+ 
+- File attribute (혹은 파일의 metadata)
+	- 파일 자체의 내용이 아니라 파일을 관리하기 위한 각종 정보들
+		- 파일 이름, 유형, 저장된 위치, 파일 사이즈
+		- 접근 권한(읽기/쓰기/실행), 시간(생성/변경/사용), 소유자 등
+		 
+- File system
+	- 운영체제에서 파일을 관리하는 부분
+	- 파일 및 파일의 메타데이터, 디렉토리 정보 등을 관리
+	- 파일의 저장 방법 결정
+	- 파일 보호 등 
 
+### Directory and Logical Disk
+- Directory
+	- 파일의 메타데이터 중 일부를 보관하고 있는 일종의 특별한 파일
+	- 그 디렉토리에 속한 파일 이름 및 파일 attribute등
+	- operation
+		- search for a file, create a file, delete a file
+		- list a directory, rename a file, traverse the file system
+
+- Partition(=Logical Disk)
+	- 하나의 (물리적)디스크 안에 여러 파티션을 두는게 일반적
+	- 여러 개의 물리적인 디스크를 하나의 파티션으로 구성하기도 함
+	- (물리적)디스크를 파티션으로 구성한 뒤 각각의 파티션에 file system을 깔거나 swapping 등 다른 용도로 사용할 수 있음.
+
+### open()
+- 파일의 메타데이터를 메모리에 올려놓는 것 <사진>
+- open("a/b/c")
+	- 디스크로부터 파일 c의 메타데이터를 메모리로 가지고 옴
+	- 이를 위하여 directory path를 search
+		- 루트 디렉토리 "/"를 open하고 그 안에서 파일 "a"의 위치 획득
+		- 파일 "a"를 open한 후 read하여 그 안에서 파일 "b"의 위치 획득
+		- 파일 "b"를 open한 후 read하여 그 안에서 파일 "c"의 위치 획득
+		- 파일 "c"를 open한다
+	- Directory path의 search에 너무 많은 시간 소요
+		- Open을 read / wirte와 별도로 두는 이유임
+		- 한번 open한 파일은 read /write 시 directory search 불필요
+	- Open file table
+		- 현재 open 된 파일들의 메타데이터 보관소(in memory)
+		- 디스크의 메타데이터보다 몇 가지 정보가 추가
+			- Open한 프로세스의 수
+			- File offset 파일 어느 위치 접근 중이닞 표시(별도 테이블 표시)
+		- File descriptor (file handle, file control block)
+			- Open file table에 대한 위치 정보(프로세스 별)
+# [28강. 가상메모리 II]
 ### 다양한 캐슁 환경
 - 캐싱 기법
 	- 한정된 빠른 공간(=캐쉬)에 요청된 데이터를 저장해 두었다가 후속 요청시 캐쉬로부터 직접 서비스하는 방식
@@ -44,6 +95,80 @@
 	- reference bit과  modified bit(diary bit)을 함께 사용
 	- reference bit = 1 : 최근에 참조된 페이지
 	- modified bit = 1 최근에 변경된 페이지(I?/ㅒO를 동반하는 페이
+
+### Page Frame의 Allocation
+- Allocation problem: 각 process에 얼마만큼의 page frame을 할당할 것인가?
+- Allocation의 필요성
+	- 메모리 참조 명령어 수행시 명령어, 데이터 등 여러 페이지 동시 참조
+		- 명령어 수행을 위해 최소한 할당되어야 하는 frame의 수가 있음
+	- loop를 구성하는 page들을 한꺼번에 allocate 되는 것이 유리함
+		- 최소한의 allocation이 없으면 매 loop마다 page fault
+
+- Allocation Scheme
+	- Equal allocation: 모든 프로세스에 똑같은 갯수 할당
+	- Proportional allocation: 프로세스 크기에 비례하여 할당
+	- Priority allocation: 프로세스의 priority에 따라 다르게 할당
+
+### Global vs Local Replacement
+- Global replacement
+	- Replace시 다른 process에 할당된 frame을 빼앗아 올 수 있다
+	- process별 할당량을 조절하는 또 다른 방법임
+	- FIFO, LRU, LFU 등의 알고리즘을 global replacement로 사용시에 해당
+	- working set, PFF 알고리즘 사용
+- Local replacement
+	- 자신에게 할당된 frame 내에서만 replacement
+	- FIFO, LRU, LFU 등의 알고리즘을 process 별로 운영시
+
+### Thrashing 
+- 프로세스의 원활한 수행에 필요한 최소한의 page frame 수를 할당 받지 못한 경우 발생
+- Page fault rate이 매우 높아짐
+- CPU utilization이 낮아짐
+- OS는 MPD(Multiprogramming degree)를 높여야 한다고 판단
+- 또 다른 프로세스가 시스템에 추가됨(higher MPD)
+- 프로세스 당 할당된 frame의 수가 더욱 감소
+- 프로세스는 page의 swap in / swap out으로 매우 바쁨
+- 대부분의 시간에 CPU는 한가함
+- low throughput
+
+### Working-Set Model
+- Locality of reference
+	- 프로세스는 특정 시간 동안 일정 장소만을 집중적으로 참조한다.
+	- 집중적으로 참조되는 해당 page들의 집합을 locality set이라 함.
+
+- Working-set Model
+	- Locality에 기반하여 프로세스가 일정 시간 동안 원활하게 수행되기 위해 한꺼번에 메모리에 올라와 있어야 하는 page들의 집합을 Working Set이라 정의함
+	- Working Set 모델에서는 process의 working set 전체가 메모리에 올라와 있어야 수행되고 그렇지 않을 경우 모든 frame을 반납한 후 swap out(suspend)
+	- Thrashing을 방지함
+	- Multiprogramming degree를 결정함
+
+### Working-Set Algorithm
+- Working set의 결정
+	- Working set window를 통해 알아냄
+	- window size가 a인 경우
+<사진>
+	- 시각 t에서의 working set WS(T)
+		- time interval 사이에 참조된 서로 다른 페이지들의 집합
+	- Working set에 속한 page는 메모리에 유지, 속하지 않은 것은 버림
+		(즉, 참조된 후 a시간 동안 해당 page 를 메모리에 유지한 후 버림)
+
+### PFF(Page-Fault Frequency) Scheme
+<사진>
+- page-fault rate의 상한값과 하한값을 둔다.
+	- page fault rate가 상한값을 넘으면 frame을 더 할당한다.
+	- page fault rate가 하한값 이하이면 할당 frame 수를 줄인다.
+- 빈 frame이 없으면 일부 프로세스를 swap out
+
+### Page Size의 결정
+- Page size를 감소시키면
+	- 페이지 수 증가
+	- 페이지 테이블 크기 증가
+	- Internal fragmentation 감소
+	- Disk transfer 효율성 감소
+		- Seek/rotation vs transfer
+	- 필요한 정보만 메모리에 올라와 메모리 이용이 효율적
+		- Locality의 활용 측면에서는 좋지 않음
+- Trend
+	- Larger page size
 
 # [27강. 가상메모리 I]
 ### Demand Paging
