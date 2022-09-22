@@ -13,7 +13,49 @@
 - 입출력 시스템
 - 디스크 관리
 
-# [29강. 파일 시스템]
+# [30강. 파일 시스템 2]
+### Allocation of File Data in Disk
+- Contiguous Allocation
+	- 단점
+		- external fragmentation
+		- File grow가 어려움
+			- file 생성시 얼마나 큰 hole을 배당할 것인가?
+			- grow 가능 vs 낭비 (internal fragmentation)
+	- 장점
+		- Fast I/O
+			- 한번의 seek/rotation으로 많은 바이트 transfer
+			- Realtime file 용으로, 또는 이미 run 중이던 process의 swapping 용
+		- Direct access(=random access) 가능
+- Linked Allocation
+	- 장점
+		- External fragmentation 발생 안 함
+	- 단점
+		- No random access
+		- Reliability 문제
+			- 한 sector가 고장나 pointer가 유실되면 많은 부분을 잃음
+		- Pointer를 위한 공간이 block의 일부가 되어 공간 효율성을 떨어뜨림
+			- 512 bytes/sector, 4 bytes/pointer
+	- 변형
+		- File-allocation table (FAT) 파일 시스템
+			 - 포인터를 별도의 위치에 보관하여 reliability와 공간효율성 문제 해결
+- Indexed Allocation
+	- 장점
+		- External fragmentation이 발생하지 않음
+		- Direct access 가능
+	- 단점
+		- Small file의 경우 공간 낭비(실제로 많은 file들이 small)
+		- Too Large file의 경우 하나의 block으로 index를 저장하기에 부족
+			- 해결 방안
+				1. linked scheme
+				2. multi-level index
+- UNIX 파일시스템의 구조
+<사진>
+	- Boot block: 부팅에 필요한 정보(bootstrap loader)
+	- Superblock: 파일 시스템에 관한 총체적인 정보를 담고 있다.
+	- Inode: 파일 이름을 제외한 파일의 모든 메타 데이터를 저장
+	- Data block: 파일의 실제 내용을 보관
+
+# [29강. 파일 시스템 1]
 ### File and File System
 - File
 	- "A named collection of related information"
@@ -65,6 +107,34 @@
 			- File offset 파일 어느 위치 접근 중이닞 표시(별도 테이블 표시)
 		- File descriptor (file handle, file control block)
 			- Open file table에 대한 위치 정보(프로세스 별)
+			- per-process file descriptor table
+			- ststem-wide open file table
+
+### File Protection
+- 각 파일에 대해 누구에게 어떤 유형의 접근(read/write/execution)을 허락할 것인가?
+- Access control 방법
+	- Access control Matrix
+		- <사진>
+		- Access control list: 파일별로 누구에게 어떤 접근 권한이 있는지 표시
+		- Capability: 사용자별로 자신이 접근 권한을 가진 파일 및 해당 권한 표시
+	- Grouping
+		- 전체 user를 owner, group, public의 세 그룹으로 구분
+		- 각 파일에 대해 세 그룹의 접근 권한(rwx)를 3비트씩으로 표시
+		- ex) UNIX 
+	- Password
+		- 파일마다 password를 두는 방법(디렉토리 파일에 두는 방법도 가능)
+		- 모든 접근 권한에 대해 하나의 password: all-or-nothing
+		- 접근 권한별 password: 암기 문제, 관리 문제
+
+### Access Methods
+- 시스템이 제공하는 파일 정보의 접근 방식
+	- 순차 접근(sequential access)
+		- 카세트 테이프를 사용하는 방식처럼 접근
+		- 읽거나 쓰면 offset은 자동적으로 증가
+	- 직접 접근(direct access, random access)
+		- LP 레코드 판과 같이 접근하도록 함.
+		- 파일을 구성하는 레코드를 임의의 순서로 접근할 수 있음.
+
 # [28강. 가상메모리 II]
 ### 다양한 캐슁 환경
 - 캐싱 기법
