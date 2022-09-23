@@ -55,6 +55,72 @@
 	- Inode: 파일 이름을 제외한 파일의 모든 메타 데이터를 저장
 	- Data block: 파일의 실제 내용을 보관
 
+### Free-Space Management
+- Bit map or bit vector
+	- bit[i]
+		- 0 => block[i] free
+		- 1 => block[i] occupied
+- Bit map은 부가적인 공간을 필요로함
+- 연속적인 n개의 free block을 찾는 데 효과적
+
+### Linked list
+- 모든 free block들을 링크로 연결 (free list)
+- 연속적인 가용공간을 찾는 것은 쉽지 않다
+- 공간의 낭비가 없다
+
+### Grouping
+- linked list 방법의 변형
+- 첫번째 free block이 n개의 pointer를 가짐
+	- n - 1 pointer는 free data block을 가리킴
+	- 마지막 pointer가 가리키는 blcok은 또 다시 n pointer를 가짐
+
+### counting
+- 프로그램들이 종종 여러 개의 연속적인 block을 할당하고 반납한다는 성질에 확인
+- (first free block, # of contiguous free blocks)을 유지
+
+### Directory Implementation
+- Linear list
+	- <file name, file의 metadata>의 list
+	- 구현이 간단
+	- 디렉토리 내에 파일이 있는지 찾기 위해서는 linear search 필요(time-consuming)
+- Hash Table
+	- linear list + hashing
+	- Hash table은 file name을 이 파일의 linear list의 위치로 바꾸어줌
+	- search time을 없앰
+	- Collision 발생 가능
+- File의 metadata의 보관 위치
+	- 디렉토리 내에 직접 보관
+	- 디렉토리에는 포인터를 두고 다른 곳에 보관
+		- inode, FAT 등
+- Long file name의 지원
+	- <file name, file의 metadata>의 list에서 각 entry는 일반적으로 고정 크기
+	- file name이 고정 크기의 entry 길이보다 길어지는 경우 entry의 마지막 부분에 이름의 뒷부분이 위치한 곳의 포인터를 두는 방법
+	- 이름의 나머지 부분은 동일한 directory file의 일부에 존재
+
+### VFS and NFS
+- Virtual File System(VFS)
+	- 서로 다른 다양한 file system에 대해 동일한 시스템 콜 인터페이스(API)를 통해 접근할 수 있게 해주는 OS의 layer
+
+- Network File System(NFS)
+	- 분산 시스템에서는 네트워크를 통해 파일이 공유될 수 있음
+	- NFS는 분산 환경에서의 대표적인 파일 공유 방법임
+
+### Page Cache and Buffer Cache
+- Page Cache
+	- Virtual memory의 paging system에서 사용하는 page frame을 caching의 관점에서 설명하는 용어
+	- Memory-Mapped I/O를 쓰는 경우 file의 I/O에서도 page cache 사용
+- Memory-Mapped I/O
+	- File의 일부를 virtual memory에 mapping시킴
+	- 매핑시킨 영역에 대한 메모리 접근 연산은 파일의 입출력을 수행하게 함
+- Buffer Cache
+	- 파일시스템을 통한 I/O 연산은 메모리의 특정 영역인 buffer cache 사용
+	- File 사용의 locality 활용
+		- 한번 읽어온 block에 대한 후속 요청시 buffer cache에서 즉시 전달
+	- 모든 프로세스가 공용으로 사용
+	- Replacement algorithm 필요(LRU, LFU 등)
+- Unified Buffer Cache
+	- 최근의 OS에서는 기존의 buffer cache가 page cache에 통합됨
+
 # [29강. 파일 시스템 1]
 ### File and File System
 - File
