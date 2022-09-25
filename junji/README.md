@@ -13,7 +13,21 @@
 - 입출력 시스템
 - 디스크 관리
 
-# [30강. 파일 시스템 2]
+# [32강. Disk Scheduling]
+- Access time의 구성
+	- seek time
+		- 헤드를 해당 실런더로 움직이는데 걸리는 시간
+	- rotational latency
+		- 헤드가 원하는 섹터에 도달하기까지 걸리는 회전지연시간
+	- transfer time
+		- 실제 데이터의 전송 시간
+- Disk bandwidth
+	- 단위 시간 당 전송된 바이트 수
+- Disk scheduling
+	- seek time을 최소화하는 것이 목표
+	- seek time - seek distance
+
+# [30 ~ 31강. 파일 시스템 2,3]
 ### Allocation of File Data in Disk
 - Contiguous Allocation
 	- 단점
