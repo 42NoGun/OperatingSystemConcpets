@@ -21,11 +21,39 @@
 		- 헤드가 원하는 섹터에 도달하기까지 걸리는 회전지연시간
 	- transfer time
 		- 실제 데이터의 전송 시간
-- Disk bandwidth
+- Disk bandwidth(디스크 대역폭)
 	- 단위 시간 당 전송된 바이트 수
 - Disk scheduling
 	- seek time을 최소화하는 것이 목표
 	- seek time - seek distance
+
+### Disk Structure
+- logical block
+	- 디스크의 외부에서 보는 디스크의 단위 정보 저장 공간들
+	- 주소를 가진 1차원 배열처럼 취급
+	- 정보를 전송하는 최소 단위
+- Sector
+	- Logical block이 물리적인 디스크에 매핑된 위치
+	- Sector 0은 최외곽 실린더의 첫 트랙에 있는 첫번째 실린더이다.
+
+### Disk Management
+- Physical formatting (Low-level formatting)
+	- 디스크를 컨트롤러가 읽고 쓸 수 있도록 섹터들로 나누는 과정
+	- 각 섹터는 header + 실제 data(보통 512 bytes) + trailer로 구성
+	- header와 trailer는 sector number, ECC(Error-Correcting Code)등의 정보가 저장되어 controller가 직접 접근 및 운영
+- Partittioning
+	- 디스크를 하나 이상의 실린더 그룹으로 나누는 과정
+	- OS는 이것을 독립적 disk로 취급(logical disk)
+- Logical Formatting
+	- 파일시스템을 만드는 것
+	- FAT, inode, free space 등의 구조 포함
+- Booting
+	- ROM에 있는 "small bootstrap loader"의 실행
+	- sector 0 (boot block)을 load하여 실행
+	- sector 0은 "full Bootstrap loader program"
+	- OS를 디스크에서 load하여 실
+### FCFS
+### SSTF
 
 # [30 ~ 31강. 파일 시스템 2,3]
 ### Allocation of File Data in Disk
@@ -1043,50 +1071,45 @@ do {
 		- 젓가락을 두 개 모두 잡을 수 있을 때에만 젓가락을 잡을 수 있게 한다.
 		- 비대칭
 			- 짝수(홀수)철학자는 왼쪽(오른쪽) 젓가락부터 잡도록 한다.
-
-
-> 2022.8.13(화)
-```
-문맥교환 : CPU 
-문맥교환과 문맥교환이 아닌 것
-	- CPU - interrupt or systemcall - CPU : 문맥교환 아니다 (지극히 일부만 저장, 오버헤드 적음, cpu의 register값 같은거.) -> cache memory flush가 오버헤드가 가장 크다(context switch)
-	- CPU process A - CPU process B
-- 프로세스를 스케줄링하기 위한 큐
-	- job queue
-	- ready queue
-	- device queue
-스케줄러 :
-	- 장기스케줄러(long-term, job scheduler)
-		- 시작 프로세스 중 어떤 것들을 ready queue로 보낼지.
-		- 프로세스에 memory를 주는 문제
-		- degree of multiprogramming(메모리에 프로그램이 몇개 올라갔는지)을 제어
-		- time sharing system에는 보통 장기스케줄러 없음(바로 ready)
-	- 단기스케줄러
-		- 어떤 프로세스를 다음번에 running 시킬지 결정
-		- 프로세스에 CPU를 주는 문제
-		- 충분히 빨라야 함
-	- 중기스케줄러
-		- 여유 공간 마련을 위해 프로세스를 통째로 메모리에서 디스크로 쫓아냄
-		- 프로세스에서 memory를 뺏는 문제
-- 프로세스의 상태
-	- running
-	- ready
-	- blocked
-	- suspended(stopped) - 중기스케줄러에 의해 쫓겨난, 이외에도 있음(외부적인 요인). 운영체제가 메모리가없어서 프로세스를 쫓아냄. 사람이 프로세스를 갑자기 정지(리눅스환경에서 CTRL + Z)
-- blocked 와 suspended 둘다 CPU가 없음. process는 일을하고 있는 상태. ssuspended는 멈춰있는 상태.
-```
-
-> keyword
 ```c
-- 알고리즘 1, 2, 3
-- 과잉양보
-- Mutual Exclusion
-- Bounded Waiting(유한 대기)
-- Synchronization Hardware
-- semaphore
-	- basic
-	- block / wakeup implementation
-	- which is better?
+enum (thinking, hungry, eating) state[5];
+semaphore self[5] = 0;
+semaphore mutex = 1;
+
+Philosopher
+do { pickup();
+	 eat();
+	 putdown();
+	 think();
+} while (1);
+
+void putdown(int i)
+{
+	P(mutex);
+	state[i] = thinking;
+	test((i + 4) % 5);
+	test((i + 1) % 5);
+	V(mutex);
+}
+
+void pickup(int i)
+{
+	P(mutex);
+	state[i] = hungry;
+	test[i];
+	V(mutex);
+	P(self[i]);
+}
+
+void test(int i)
+{
+	if (state[(i+4)%5] != eatig && state[i] == hungry
+	&& state[(i + 1) % 5] != eating)
+	{
+		state[i] = eating;
+		V(self[i]);
+	}
+}
 ```
 # [19강. 병행제어I 3]
 - 동시접근의 해석. (CPU가 하나여도 옮겨쓰는 과정에서 발생하는 문제까지 포함)
