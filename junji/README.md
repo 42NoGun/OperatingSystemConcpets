@@ -13,7 +13,70 @@
 - 입출력 시스템
 - 디스크 관리
 
-# [32강. Disk Scheduling]
+# [33강. 입출력 시스템2]
+### UNIX 파일 시스템
+- 수퍼블록(superblock)
+	- 파일시스템의 총체적 레이아웃 정보 보관
+	- 블록의 크기, inode의 수, data block의 수, free block list의 head
+- i-node 블록
+	- 메타데이터 보관(실제 데이터 블록의 위치 정보 포함)
+- data 블록
+	- 실제 데이터 보관
+(디스크 헤드가 meta data와 실제 data를 이동하는 시간... 이를 가까이할 수 없을까-> 파일들을 그룹화)
+
+### Ext2 파일시스템
+- 블록의 구룹화
+	- 메타데이터와 실제 데이터를 인접하게 배치하여 디스크 탐색 시간 감소
+- 수퍼불록의 중복저장
+	- 수퍼블록을 그룹마다 중복저장하여 디스크 오류에 대비
+- 수퍼블록(Super block)
+	- 아이노드 수, 가용 아이노드 수, 데이터 블록 수, 가용 데이터블록 수
+	- 그룹 당 블록 수, 시간 정보
+- 그룹 디스크립터(Group descriptor)
+	- 데이터블록 비트맵의 시작위치, 아이노드 비트맵의 시작위치
+	- 첫 번째 아이노드의 시작주소, 가용 아이노드의 
+- 데이터 블록 비트맵(data block bitmap)
+	- 사용중인 데이터블록과 빈 데이터블록의 표시
+- 아이노드 비트맵(inode bitmap)
+	- 사용중인 아이노드와 빈 아이노드의 표시
+- 아이노드 테이블(inode table)
+	- 실제 아이노드의 저장 위치
+
+### Ext4 = Ext2 + 저널링
+- 갑작스런 전원 공급 중단(버퍼캐시, 파일시스템)
+- journaling
+	- 5~30초 단위로 버퍼캐시에서 수정된 내용을 저널영역에 기록
+- Checkpointing
+	- 수정된 내용을 파일시스템의 원래 위치에 반영
+- 2가지 저널링 방법
+	1. 메타데이터만 저널링
+		- 저널링 주기가 도래하면 데이터를 파일시스템에 저장한 후 메타데이터를 저널영역에 기록
+		- 체크포인중 주기가 도래하면 메타데이터를 파일시스템에 반영
+		- 크래쉬 발생 시 파일시스템 자체가 깨어지는 것 방지(일부 데이터 훼손가능)
+	2. 메타데이터와 일반데이터를 모두 저널링
+		- 저널링 주기가 도래하면 데이터와 메타데이터를 저널영역에 기록
+		- 체크포인팅 주기가 도래하면 데이터와 메타데이터를 파일시스템에 반영
+		- 크래쉬 발생 시 데이터 자체의 복구 보장
+
+### 파일시스템을 위한 버퍼캐시 알고리즘
+### LRFU 알고리즘
+<사진>
+- 캐시 블록 x중 그 가치평가값 value(x)가 제일 적은 블록 삭제
+- LFU적인 성질
+	- 과거의 모든 참조기록이 현재 시점의 블록 가치 계산에 합산됨
+- LRU적인 성질
+	- a < 1이므로 a^n은 감소함수
+	- 최근 참조일수록 블록의 가치 평가에 대한 기여도가 큼
+- Space overhead
+	- Should all the past reference times of each block be maintained?
+- Time overhead
+	- Should the value of all blocks in cache be re-calcultaed at each replacement decision?
+### Space complexity
+<사진>
+<사진>
+- 지금은 LRFU보다 더 효율적인 알고리즘 있다.
+
+# [32강. 입출력 시스템1]
 - Access time의 구성
 	- seek time
 		- 헤드를 해당 실런더로 움직이는데 걸리는 시간
@@ -52,8 +115,53 @@
 	- sector 0 (boot block)을 load하여 실행
 	- sector 0은 "full Bootstrap loader program"
 	- OS를 디스크에서 load하여 실
-### FCFS
-### SSTF
+### FCFS(First Come First Served)
+### SSTF(Shortest Seek Time First)
+- Starvation 문제
+
+### SCAN
+- disk arm이 디스크의 한쪽 끝에서 다른쪽 끝으로 이동하여 가는 길목에 있는 모든 요청을 처리한다.
+- 다른 한쪽 끝에 도달하면 역방향으로 이동하여 오는 길목에 있는 모든 요청을 처리하여 다시 반대쪽 끝으로 이동한다.
+- 문제점: 실린더 위치에 따라 대기 시간이 다르다.
+
+### C-SCAN(거리에 따른 편차 줄임)
+- 헤드가 한쪽 끝에서 다른쪽 끝으로 이동하여 가는 길목에 있는 모든 요청을 처리
+- 다른쪽 끝에 도달했으면 요청을 처리하지 않고 곧바로 출발점으로 다시 이동
+- SCAN보다 균일한 대기 시간을 제공한다.
+
+### N-SCAN
+- SCAN의 변형 알고리즘
+- 일단 arm이 한 방향으로 움직이기 시작하면 그 시점 이후에 도착한 job은 되돌아 올 때 service
+
+### LOOK and C-LOOK
+- SCAN이나 C-SCAN은 헤드가 디스크 끝에서 끝으로 이동
+- LOOK과 C-LOOK은 헤드가 진행 중이거나 그 방향에 더이상 기다리는 요청이 없으면 헤드의 이동방향을 즉시 반대로 이동한다.
+
+### Disk-Scheduling Algorithm의 결정
+- SCAN, C-SCAN 및 그 응용 알고리즘은 LOOK, C-LOOK 등이 일반적으로 디스크 입출력이 많은 시스템에서 효율적인 곳으로 알려져 있음
+- File의 할당 방법에 따라 디스크 요청이 영향을 받음
+- 디스크 스케줄링 알고리즘은 필요할 경우 다른 알고리즘으로 쉽게 교체할 수 있도록 OS와 별도의 모듈로 작성되는 것이 바람직하다.
+
+### Swap-Space Management
+- Disk를 사용하는 두 가지 이유
+	- memory의 volatile한 특성 -> file system
+	- 프록램 실행을 위한 memory 공간 부족 -> swap space (swap area)
+- Swap-space
+	- Virtual memory system에서는 디스크를 memory의 연장 공간으로 사용
+	- 파일시스템 내부에 둘 수도 있으나 별도 partition 사용이 일반적
+		- 공간효율성보다는 속도 효율성이 우선
+		- 일반 파일보다 훨씬 짧은 시간만 존재하고 자주 참조됨
+		- 따라서, block의 크기 및 저장 방식이 일반 파일시스템과 다름
+### RAID
+- RAID (Redundant Array of Independent Disks)
+- RAID의 사용 목적
+	- 디스크 처리 속도 향상
+		- 여러 디스크에 block의 내용을 분산 지침
+		- 병렬적으로 읽어 옴(interleaving, striping)
+	- 신뢰성 향상
+		 - 통합 정보를 여러 디스크에 중복 저장
+		 - 하나의 디스크가 고장시 다른 디스크에서 읽어옴(Mirroring, shadowing)
+		 - 단순한 중복 저장이 아니라 일부 디스크에 parity(축약 정보)를 저장하여 공간의 효율성을 높일 수 있다.
 
 # [30 ~ 31강. 파일 시스템 2,3]
 ### Allocation of File Data in Disk
